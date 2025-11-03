@@ -8,13 +8,18 @@
 #include <algorithm>
 #include <memory>
 #include <thread>
+#include <queue>
+#include <mutex>
+#include <condition_variable>
+#include <functional>
+#include <atomic>
 
 #include "glad.h"
 #include <GLFW/glfw3.h>
 
-#include "imgui.h"
-#include "imgui_impl_glfw.h"
-#include "imgui_impl_opengl3.h"
+#include <imgui.h>
+#include <imgui_impl_glfw.h>
+#include <imgui_impl_opengl3.h>
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -22,10 +27,18 @@
 
 #include "FastNoiseLite.h"
 
+//font loader
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
 #include "inputHandler.cpp"
+
+std::queue<std::function<void()>> startMeshesTaskQueue;
+std::mutex SMqueueMutex;
+std::condition_variable SMqueueCV;
+std::mutex realMeshesQueueMutex;
+std::condition_variable realMeshesQueueCV;
+
 Input input;
 Debug debug;
 float sliderTester1 = 35;
@@ -39,23 +52,23 @@ short distanceIncriment[] = {
 glm::vec3 generatePos = glm::vec3(0.0f, 0.0f, 0.0f);
 
 struct vec2Hash {
-    std::size_t operator()(const glm::vec2& v) const {
-        std::size_t h1 = std::hash<float>{}(v.x);
-        std::size_t h2 = std::hash<float>{}(v.y);
-        return h1 ^ (h2 << 1);
-    }
+	std::size_t operator()(const glm::vec2& v) const {
+		std::size_t h1 = std::hash<float>{}(v.x);
+		std::size_t h2 = std::hash<float>{}(v.y);
+		return h1 ^ (h2 << 1);
+	}
 };
 
 struct vec3Hash {
-    std::size_t operator()(const glm::vec3& v) const noexcept {
-        std::size_t h = std::hash<float>{}(v.x);
-        auto combine = [](std::size_t seed, std::size_t value) {
-            return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-        };
-        h = combine(h, std::hash<float>{}(v.y));
-        h = combine(h, std::hash<float>{}(v.z));
-        return h;
-    }
+	std::size_t operator()(const glm::vec3& v) const noexcept {
+		std::size_t h = std::hash<float>{}(v.x);
+		auto combine = [](std::size_t seed, std::size_t value) {
+			return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2));
+			};
+		h = combine(h, std::hash<float>{}(v.y));
+		h = combine(h, std::hash<float>{}(v.z));
+		return h;
+	}
 };
 
 std::unordered_map<glm::vec2, float, vec2Hash> storedNoise;
@@ -148,6 +161,13 @@ if (pressed(BUTTON_F11)) {\
 }\
 \
 
+//framebuffers creation
+frameBuffer horizontalBlurBuffer;
+frameBuffer verticalBlurBuffer;
+frameBuffer plainTerrainBuffer;
+frameBuffer darkHorizontalBlurBuffer;
+frameBuffer darkVerticalBlurBuffer;
+
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -168,6 +188,7 @@ bool worker1Finished = true;
 bool createAllMeshes = false;
 unsigned int meshesAmount = 0;
 unsigned int completedChunks = 0;
+std::queue<unsigned int> realMeshesQueue;
 std::vector<unsigned int> realMeshes;
 
 struct chunkCoords {
@@ -176,7 +197,6 @@ struct chunkCoords {
 };
 
 std::vector<chunkCoords> neededChunks;
-std::vector<unsigned int> neededMeshBuffers;
 
 bool active = false;
 bool joinableThreads[1] = { true };
@@ -202,18 +222,19 @@ unsigned int framebuffer;
 bool makeChunksOrder = false;
 
 struct Plane {
-    glm::vec3 normal;
-    float distance;
+	glm::vec3 normal;
+	float distance;
 
-    Plane() = default;
+	Plane() = default;
 
 	Plane(const glm::vec3& p1, const glm::vec3& norm)
 		: normal(glm::normalize(norm)),
 		distance(glm::dot(normal, p1))
-	{}
+	{
+	}
 
 	float getSignedDistanceToPlane(const glm::vec3& point) const {
-    return glm::dot(normal, point) - distance;
+		return glm::dot(normal, point) - distance;
 	}
 };
 
@@ -230,102 +251,104 @@ struct Frustum {
 
 Frustum createFrustumFromCamera(const Camera& cam, float aspect, float fovY, float zNear, float zFar)
 {
-    Frustum frustum;
+	Frustum frustum;
 
-    glm::vec3 nearCenter = cam.Position + cam.Front * zNear;
-    glm::vec3 farCenter  = cam.Position + cam.Front * zFar;
+	glm::vec3 nearCenter = cam.Position + cam.Front * zNear;
+	glm::vec3 farCenter = cam.Position + cam.Front * zFar;
 
-    float halfVSide = zFar * tanf(fovY * 0.5f);
-    float halfHSide = halfVSide * aspect;
+	float halfVSide = zFar * tanf(fovY * 0.5f);
+	float halfHSide = halfVSide * aspect;
 
-    glm::vec3 up = cam.Up;
-    glm::vec3 right = cam.Right;
-    glm::vec3 front = cam.Front;
+	glm::vec3 up = cam.Up;
+	glm::vec3 right = cam.Right;
+	glm::vec3 front = cam.Front;
 
-    // Near and Far planes
-    frustum.nearFace = Plane(nearCenter, front);
-    frustum.farFace  = Plane(farCenter, -front);
+	// Near and Far planes
+	frustum.nearFace = Plane(nearCenter, front);
+	frustum.farFace = Plane(farCenter, -front);
 
-    // Top plane
-    glm::vec3 topNormal = glm::cross(glm::normalize(glm::cross(right, front)), right);
-    glm::vec3 topPoint = cam.Position + up * halfVSide + front * zFar;
-    frustum.topFace = Plane(topPoint, glm::cross(glm::cross(right, front), right));
+	// Top plane
+	glm::vec3 topNormal = glm::cross(glm::normalize(glm::cross(right, front)), right);
+	glm::vec3 topPoint = cam.Position + up * halfVSide + front * zFar;
+	frustum.topFace = Plane(topPoint, glm::cross(glm::cross(right, front), right));
 
-    // Bottom plane
-    glm::vec3 bottomNormal = glm::cross(right, glm::normalize(glm::cross(front, -right)));
-    glm::vec3 bottomPoint = cam.Position - up * halfVSide + front * zFar;
-    frustum.bottomFace = Plane(bottomPoint, glm::cross(right, glm::cross(front, -right)));
+	// Bottom plane
+	glm::vec3 bottomNormal = glm::cross(right, glm::normalize(glm::cross(front, -right)));
+	glm::vec3 bottomPoint = cam.Position - up * halfVSide + front * zFar;
+	frustum.bottomFace = Plane(bottomPoint, glm::cross(right, glm::cross(front, -right)));
 
-    // Right plane
-    glm::vec3 rightNormal = glm::cross(up, glm::normalize(glm::cross(front, up)));
-    glm::vec3 rightPoint = cam.Position + right * halfHSide + front * zFar;
-    frustum.rightFace = Plane(rightPoint, glm::cross(up, glm::cross(front, up)));
+	// Right plane
+	glm::vec3 rightNormal = glm::cross(up, glm::normalize(glm::cross(front, up)));
+	glm::vec3 rightPoint = cam.Position + right * halfHSide + front * zFar;
+	frustum.rightFace = Plane(rightPoint, glm::cross(up, glm::cross(front, up)));
 
-    // Left plane
-    glm::vec3 leftNormal = glm::cross(glm::normalize(glm::cross(up, front)), up);
-    glm::vec3 leftPoint = cam.Position - right * halfHSide + front * zFar;
-    frustum.leftFace = Plane(leftPoint, glm::cross(glm::cross(up, front), up));
+	// Left plane
+	glm::vec3 leftNormal = glm::cross(glm::normalize(glm::cross(up, front)), up);
+	glm::vec3 leftPoint = cam.Position - right * halfHSide + front * zFar;
+	frustum.leftFace = Plane(leftPoint, glm::cross(glm::cross(up, front), up));
 
-    return frustum;
+	return frustum;
 }
 
 struct Transform {
-    glm::vec3 position;
-    glm::vec3 rotation;
-    glm::vec3 scale;
+	glm::vec3 position;
+	glm::vec3 rotation;
+	glm::vec3 scale;
 	glm::mat4 model;
 
-    Transform(glm::vec3 p, glm::vec3 r, glm::vec3 s, glm::mat4 m)
-        : position(p), rotation(r), scale(s) , model(m) {}
+	Transform(glm::vec3 p, glm::vec3 r, glm::vec3 s, glm::mat4 m)
+		: position(p), rotation(r), scale(s), model(m) {
+	}
 };
 
 struct Volume {
-    virtual bool isOnFrustum(const Frustum& camFrustum, const Transform& modelTransform) const = 0;
+	virtual bool isOnFrustum(const Frustum& camFrustum, const Transform& modelTransform) const = 0;
 };
 
 struct Sphere : public Volume {
-    glm::vec3 center{ 0.f, 0.f, 0.f };
-    float radius{ 0.f };
+	glm::vec3 center{ 0.f, 0.f, 0.f };
+	float radius{ 0.f };
 
 	Sphere(glm::vec3 c, float r)
-		: center(c) , radius(r) {}
+		: center(c), radius(r) {
+	}
 
 	bool isOnFrustum(const Frustum& camFrustum, const Transform& transform) const final {
-    //Get global scale is computed by doing the magnitude of
-    //X, Y and Z model matrix's column.
-    const glm::vec3 globalScale = transform.scale;
+		//Get global scale is computed by doing the magnitude of
+		//X, Y and Z model matrix's column.
+		const glm::vec3 globalScale = transform.scale;
 
-    //Get our global center with process it with the global model matrix of our transform
-    const glm::vec3 globalCenter = { transform.model * glm::vec4(center, 1.f) };
+		//Get our global center with process it with the global model matrix of our transform
+		const glm::vec3 globalCenter = { transform.model * glm::vec4(center, 1.f) };
 
-    //To wrap correctly our shape, we need the maximum scale scalar.
-    const float maxScale = std::max(std::max(globalScale.x, globalScale.y), globalScale.z);
+		//To wrap correctly our shape, we need the maximum scale scalar.
+		const float maxScale = std::max(std::max(globalScale.x, globalScale.y), globalScale.z);
 
-    //Max scale is assuming for the diameter. So, we need the half to apply it to our radius
-    Sphere globalSphere(globalCenter, radius * (maxScale * 0.5f));
+		//Max scale is assuming for the diameter. So, we need the half to apply it to our radius
+		Sphere globalSphere(globalCenter, radius * (maxScale * 0.5f));
 
-    //Check Firstly the result that have the most chance
-    //to faillure to avoid to call all functions.
-    return (globalSphere.isOnOrForwardPlane(camFrustum.leftFace) &&
-        globalSphere.isOnOrForwardPlane(camFrustum.rightFace) &&
-        globalSphere.isOnOrForwardPlane(camFrustum.farFace) &&
-        globalSphere.isOnOrForwardPlane(camFrustum.nearFace) &&
-        globalSphere.isOnOrForwardPlane(camFrustum.topFace) &&
-        globalSphere.isOnOrForwardPlane(camFrustum.bottomFace));
+		//Check Firstly the result that have the most chance
+		//to faillure to avoid to call all functions.
+		return (globalSphere.isOnOrForwardPlane(camFrustum.leftFace) &&
+			globalSphere.isOnOrForwardPlane(camFrustum.rightFace) &&
+			globalSphere.isOnOrForwardPlane(camFrustum.farFace) &&
+			globalSphere.isOnOrForwardPlane(camFrustum.nearFace) &&
+			globalSphere.isOnOrForwardPlane(camFrustum.topFace) &&
+			globalSphere.isOnOrForwardPlane(camFrustum.bottomFace));
 	};
 
-	bool isOnOrForwardPlane(const Plane& plane) const{
-    return plane.getSignedDistanceToPlane(center) > -radius;
+	bool isOnOrForwardPlane(const Plane& plane) const {
+		return plane.getSignedDistanceToPlane(center) > -radius;
 	}
-    
+
 };
 
-
-   
-
-
+std::atomic<bool> awaitingMeshAlloc(false);
+std::mutex meshesAllocMutex;
+std::condition_variable meshesAllocCV;
 
 int main() {
+
 	srand(static_cast<unsigned int>(time(NULL)));
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
@@ -370,9 +393,9 @@ int main() {
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
 	ImGui_ImplOpenGL3_Init("#version 330 core");
 
-	if(extraThreads < 1) joinableThreads[0] = false;
+	if (extraThreads < 1) joinableThreads[0] = false;
 
-	
+
 
 
 	//initialize fonts and openGL settings
@@ -468,7 +491,8 @@ int main() {
 	Shader lightOutlineShader("../resources/shaders/lights.vert", "../resources/shaders/outline.frag");
 	Shader foliageShader("../resources/shaders/foliage.vert", "../resources/shaders/tiles.frag");
 	Shader debugShader("../resources/shaders/debug.vert", "../resources/shaders/debug.frag");
-	Shader godRaysShader("../resources/shaders/rays.vert", "../resources/shaders/rays.frag");
+	Shader horizontalBlurShader("../resources/shaders/simple.vert", "../resources/shaders/horizontalBlur.frag");
+	Shader verticalBlurShader("../resources/shaders/simple.vert", "../resources/shaders/verticalBlur.frag");
 
 	//vertex buffer objects and vertex array objects 
 	unsigned int lightVAOs[1], lightVBOs[1];
@@ -524,7 +548,7 @@ int main() {
 		}
 	}
 
-	
+
 
 	//use if using indices
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[0]);
@@ -545,7 +569,7 @@ int main() {
 	glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(unsigned int), (void*)0);
 	glEnableVertexAttribArray(0);
 
-	
+
 	glBindVertexArray(VAOs[0]);
 	glBindBuffer(GL_ARRAY_BUFFER, VBOs[0]);
 	glBufferData(GL_ARRAY_BUFFER, mainMesh.size(0), mainMesh.vertices, GL_DYNAMIC_DRAW);
@@ -587,23 +611,12 @@ int main() {
 	glEnableVertexAttribArray(1);
 	glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 4 * sizeof(float), (void*)(2 * sizeof(float)));
 
-	glGenFramebuffers(1, &framebuffer);
-	glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
-
-	glGenTextures(1, &textureColorbuffer);
-	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window_width, window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-	glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, textureColorbuffer, 0);
-
-	glGenRenderbuffers(1, &rbo);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_width, window_height);
-	glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, rbo);
-
-	if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
-	glBindFramebuffer(GL_FRAMEBUFFER, 0);
+	//framebuffers setup
+	plainTerrainBuffer.build(window_width, window_height);
+	horizontalBlurBuffer.build(window_width, window_height);
+	verticalBlurBuffer.build(window_width, window_height);
+	darkHorizontalBlurBuffer.build(window_width, window_height);
+	darkVerticalBlurBuffer.build(window_width, window_height);
 
 	//textures
 	stbi_set_flip_vertically_on_load(true);
@@ -652,6 +665,10 @@ int main() {
 	foliageShader.use();
 	foliageShader.setInt("material.diffuse", 1);
 	foliageShader.setInt("material.specular", 2);
+	horizontalBlurShader.use();
+	horizontalBlurShader.setInt("screenTexture", 0);
+	verticalBlurShader.use();
+	verticalBlurShader.setInt("screenTexture", 0);
 
 	std::vector<glm::vec3> pointLightPositions = {
 		glm::vec3(0.f,  4.f,  0.f),
@@ -666,12 +683,27 @@ int main() {
 
 	float change = 4.1f;
 	short threadTurn = 0;
-	unsigned int meshBuffersProgressIndex;
 	chunkCoords chunksOrderSaver;
 
 	Frustum frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 1000.f);
 
 	while (!glfwWindowShouldClose(window)) {
+
+		{
+			// Drain all queued tasks quickly and execute them without holding SMqueueMutex.
+			std::vector<std::function<void()>> tasks;
+			{
+				std::lock_guard<std::mutex> qlock(SMqueueMutex);
+				while (!startMeshesTaskQueue.empty()) {
+					tasks.push_back(std::move(startMeshesTaskQueue.front()));
+					startMeshesTaskQueue.pop();
+				}
+			}
+			for (auto &t : tasks) {
+				if (t) t();
+			}
+		}
+
 		//get input changed bools ready to recieve input
 		for (int i = 0; i < BUTTON_COUNT; i++) {
 			input.buttons[i].is_changed = false;
@@ -696,12 +728,12 @@ int main() {
 		glm::vec3 newPos = glm::vec3(round(camera.Position.x / 10) * 10.0f, round(camera.Position.y / 10) * 10.0f, round(camera.Position.z / 10) * 10.0f);
 
 		if (newPos != prevPos) {
-			
+
 		} //loadNewChunks(sliderTester1, newPos);
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 
-		glBindFramebuffer(GL_FRAMEBUFFER, framebuffer);
+		plainTerrainBuffer.drawTo();
 
 		glEnable(GL_DEPTH_TEST);
 		//glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
@@ -714,25 +746,26 @@ int main() {
 		if (debug.showChunkBorders) {
 			glDisable(GL_CULL_FACE);
 			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);\
-			debugShader.use();
+				debugShader.use();
 			debugShader.setMat4("pv", projection * view);
 			glBindVertexArray(debugVAO);
 
 			for (unsigned int i = 0; i < meshesAmount; i++) {
 				//if(sqrt((meshes[i].X - camera.Position.x) * (meshes[i].X - camera.Position.x) + (meshes[i].Y - camera.Position.y) * (meshes[i].Y - camera.Position.y) + (meshes[i].Z - camera.Position.z) * (meshes[i].Z - camera.Position.z)) < 45){
-					model = glm::mat4(1.0f);
-					model = glm::translate(model, glm::vec3(meshes[i].X, meshes[i].Y, meshes[i].Z));
-					if(meshes[i].length == 0){
-						debugShader.setBool("skipped", true);
-					}else{
-						debugShader.setBool("skipped", false);
-					}
-					debugShader.setMat4("model", model);
-					glDrawArrays(GL_TRIANGLES, 0, 36);
+				model = glm::mat4(1.0f);
+				model = glm::translate(model, glm::vec3(meshes[i].X, meshes[i].Y, meshes[i].Z));
+				if (meshes[i].length == 0) {
+					debugShader.setBool("skipped", true);
+				}
+				else {
+					debugShader.setBool("skipped", false);
+				}
+				debugShader.setMat4("model", model);
+				glDrawArrays(GL_TRIANGLES, 0, 36);
 				//}
 			}
 			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);\
-			glEnable(GL_CULL_FACE);
+				glEnable(GL_CULL_FACE);
 		}
 
 		shaderProgramBlocks.use();
@@ -781,7 +814,7 @@ int main() {
 		shaderProgramBlocks.setFloat("spotLight.cutOff", glm::cos(glm::radians(15.0f)));
 		shaderProgramBlocks.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));*/
 
-		if(held(BUTTON_B)) setSpawn(camera.Position.x, camera.Position.z);
+		if (held(BUTTON_B)) setSpawn(camera.Position.x, camera.Position.z);
 
 		for (unsigned int i = 0; i < realMeshes.size(); i++) {
 			model = glm::mat4(1.0f);
@@ -812,8 +845,8 @@ int main() {
 				glDrawArrays(GL_TRIANGLES, 0, meshes[realMeshes[i]].length);
 			}
 		}*/
-
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
 		glDisable(GL_DEPTH_TEST);
 		glClear(GL_COLOR_BUFFER_BIT);
 
@@ -823,16 +856,65 @@ int main() {
 		skyboxShader.setMat4("pv", projection * view);
 		glBindVertexArray(skyboxVAO);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
-		godRaysShader.use();
-		godRaysShader.setBool("rays", false);
+		horizontalBlurShader.use();
+		horizontalBlurShader.setInt("post", 0);
+		plainTerrainBuffer.readFrom();
 		glBindVertexArray(screenQuadVAO);
-		glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-		godRaysShader.setMat4("view", view);
-		godRaysShader.setBool("rays", true);
+
+		//draw to buffers
+		horizontalBlurBuffer.drawTo();
+		horizontalBlurShader.setMat4("view", view);
+		horizontalBlurShader.setInt("post", 1);
+		glActiveTexture(GL_TEXTURE0);
+		plainTerrainBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		verticalBlurBuffer.drawTo();
+		verticalBlurShader.use();
+		verticalBlurShader.setMat4("view", view);
+		verticalBlurShader.setInt("post", 1);
+		glActiveTexture(GL_TEXTURE0);
+		horizontalBlurBuffer.readFrom();
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		darkHorizontalBlurBuffer.drawTo();
+		horizontalBlurShader.use();
+		horizontalBlurShader.setInt("post", 2);
+		glActiveTexture(GL_TEXTURE0);
+		plainTerrainBuffer.readFrom();
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		darkVerticalBlurBuffer.drawTo();
+		verticalBlurShader.use();
+		verticalBlurShader.setInt("post", 2);
+		glActiveTexture(GL_TEXTURE0);
+		darkHorizontalBlurBuffer.readFrom();
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		//draw to screen after populating buffers
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
+
+		/*verticalBlurShader.use();
+		verticalBlurShader.setInt("post", 1);
+		glActiveTexture(GL_TEXTURE0);
+		verticalBlurBuffer.readFrom();
+		glDrawArrays(GL_TRIANGLES, 0, 6);*/
+
+		verticalBlurShader.use();
+		verticalBlurShader.setInt("post", 2);
+		glActiveTexture(GL_TEXTURE0);
+		darkVerticalBlurBuffer.readFrom();
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		/*plainTerrainBuffer.readFrom();
+		horizontalBlurShader.use();
+		horizontalBlurShader.setInt("post", 0);
+		glDrawArrays(GL_TRIANGLES, 0, 6);*/
+
+		glEnable(GL_DEPTH_TEST);
 
 		//glDrawElements(GL_TRIANGLES, mainMesh.indicesAmount, GL_UNSIGNED_INT, 0);
 
@@ -957,31 +1039,35 @@ int main() {
 			generatePos = newPos;
 			threadTurn = 0;
 			neededThreadGeneratedChunks = 0;
-			if(extraThreads == 1){
+			if (extraThreads == 1) {
 				neededChunks.clear();
 			}
 
 			totalChunks = sliderTester1;
-			
+
 			completedChunks = 0;
-			meshBuffersProgressIndex = 0;
 			createAllMeshes = false;
 			makeChunksOrder = true;
 			worker1Finished = false;
 		}
 
-		if(createAllMeshes){
-			delete[] meshes;
-			meshes = new Mesh[meshesAmount];
-			createAllMeshes = false;
-		}
-		if(neededMeshBuffers.size() > 0){
-			for(int i = 0; i < 500; i++){
-				if(meshBuffersProgressIndex >= neededMeshBuffers.size() - 1) goto buffersExit;
-				meshes[realMeshes[meshBuffersProgressIndex++]].updateBuffers();
+		{
+			std::unique_lock<std::mutex> lk(realMeshesQueueMutex);
+			// process up to N items per frame
+			int processed = 0;
+			while (!realMeshesQueue.empty() && processed < 500) {
+				unsigned int idx = realMeshesQueue.front();
+				realMeshesQueue.pop();
+				lk.unlock();
+
+				// Now safely operate on meshes[idx] on the GL/main thread
+				meshes[idx].updateBuffers();
+				realMeshes.push_back(idx);
+
+				lk.lock();
+				processed++;
 			}
 		}
-		buffersExit:
 
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
@@ -1001,7 +1087,7 @@ int main() {
 		glfwSwapBuffers(window);
 		active = true;
 	}
-	
+
 	ImGui_ImplOpenGL3_Shutdown();
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
@@ -1025,10 +1111,8 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 	window_width = width;
 	window_height = height;
 	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 1000.0f);
-	glBindRenderbuffer(GL_RENDERBUFFER, rbo);
-	glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, window_width, window_height);
-	glBindTexture(GL_TEXTURE_2D, textureColorbuffer);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, window_width, window_height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+	horizontalBlurBuffer.screenUpdate(window_width, window_height);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glViewport(0, 0, width, height);
 }
 
@@ -1164,126 +1248,127 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	}
 }
 
-void timeBenchmark(bool stop){
+void timeBenchmark(bool stop) {
 	static float oldTime;
-	if(stop){
+	if (stop) {
 		std::cout << "Total time: " << float(glfwGetTime()) - oldTime << '\n';
-	}else{
+	}
+	else {
 		oldTime = float(glfwGetTime());
 		std::cout << "Starting benchmark\n";
 	}
 }
 
-void chunker1(){
-	while(active == false){
+void chunker1() {
+	while (active == false) {
 
 	}
-	while(true){
-	if(!worker1Finished){
-		if(makeChunksOrder){
-			timeBenchmark(0);
-			generate = true;
+	while (true) {
+		if (!worker1Finished) {
+			if (makeChunksOrder) {
+				timeBenchmark(0);
+				generate = true;
 
-			for (int y = 0; y < std::clamp(totalChunks, 0, 40); y++) {
-				for (int z = 0; z < totalChunks; z++) {
-					for (int x = 0; x < totalChunks; x++) {
-						if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= totalChunks) {
-							if(joinableThreads[0] == false) break;
-							chunkCoords threadChunk;
-							threadChunk.x = generatePos.x + x * 10.0f;
-							threadChunk.y = generatePos.y + (y - 1) * 10.0f;
-							threadChunk.z = generatePos.z + z * 10.0f;
-							threadChunk.index = completedChunks;
-							neededChunks.push_back(threadChunk);
-							completedChunks++;
-							meshesAmount++;
-							x *= -1;
-							if(x < 0) x--;
-						}
-					}
-					z *= -1;
-					if(z < 0) z--;
-				}
-				y *= -1;
-				if(y < 0) y--;
-			}
-			std::reverse(neededChunks.begin(), neededChunks.end());
-
-			/*
-			std::unordered_map<glm::vec3, bool, vec3Hash> repeatingChunks;
-			for(int i = 1; i < totalChunks; i+= (i > 6) * (int(i + 5 < totalChunks) + int(i + 4 < totalChunks) + int(i + 3 < totalChunks)) + int(i + 2 < totalChunks) + 1){
-				for (int y = i * -1; y < i; y++) {
-					for (int z = i * -1; z < i; z++) {
-						for (int x = i * -1; x < i; x++) {
-							if(joinableThreads[0] == false) break;
-							if(repeatingChunks.find(glm::vec3(x, y, z)) == repeatingChunks.end()){
-								if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= i) {
-									repeatingChunks.insert({glm::vec3(x, y, z), true});
-									chunkCoords threadChunk;
-									threadChunk.x = generatePos.x + x * 10.0f;
-									threadChunk.y = generatePos.y + y * 10.0f;
-									threadChunk.z = generatePos.z + z * 10.0f;
-									threadChunk.index = completedChunks;
-									neededChunks.insert(neededChunks.begin(), threadChunk);
-									completedChunks++;
-									meshesAmount++;
-								}
+				for (int y = 0; y < std::clamp(totalChunks, 0, 15); y++) {
+					for (int z = 0; z < totalChunks; z++) {
+						for (int x = 0; x < totalChunks; x++) {
+							if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= totalChunks) {
+								if (joinableThreads[0] == false) break;
+								chunkCoords threadChunk{};
+								threadChunk.x = generatePos.x + x * 10.0f;
+								threadChunk.y = generatePos.y + (y - 1) * 10.0f;
+								threadChunk.z = generatePos.z + z * 10.0f;
+								threadChunk.index = completedChunks;
+								neededChunks.push_back(threadChunk);
+								completedChunks++;
+								meshesAmount++;
+								x *= -1;
+								if (x < 0) x--;
 							}
 						}
+						z *= -1;
+						if (z < 0) z--;
 					}
+					y *= -1;
+					if (y < 0) y--;
 				}
-			}
-			*/
-			makeChunksOrder = false;
-			neededThreadGeneratedChunks = meshesAmount;
-			createAllMeshes = true;
-			realMeshes.clear();
-			while(createAllMeshes){
 
+				makeChunksOrder = false;
+				neededThreadGeneratedChunks = meshesAmount;
+
+                // Request main-thread allocation and wait for it to finish
+                awaitingMeshAlloc.store(true); // worker will wait until main clears this
+                auto allocTask = []() {
+                    // Run on main thread
+                    delete[] meshes;
+                    meshes = new Mesh[meshesAmount];
+                    // signal worker that allocation is done
+                    awaitingMeshAlloc.store(false);
+                    meshesAllocCV.notify_one();
+                };
+
+                {
+                    std::lock_guard<std::mutex> lock(SMqueueMutex);
+                    startMeshesTaskQueue.push(allocTask);
+                }
+                SMqueueCV.notify_one();
+
+                // Wait for main thread to finish allocation (worker blocks here)
+                {
+                    std::unique_lock<std::mutex> lk(meshesAllocMutex);
+                    meshesAllocCV.wait(lk, [] { return !awaitingMeshAlloc.load(); });
+                }
+
+				// Reset runtime structures after allocation
+				realMeshes.clear();
+				realMeshesQueue = std::queue<unsigned int>();
+				totalChunksGenerated = 0;
+				timeBenchmark(1);
 			}
-			totalChunksGenerated = 0;
-			timeBenchmark(1);
-		}else{
-			timeBenchmark(0);
-			while(neededChunks.size() > 0){
-				int index = neededChunks.size() - 1;
-				worker1chunk->create(neededChunks[index].x, neededChunks[index].y, neededChunks[index].z);
-				meshes[neededChunks[index].index].fillChunk(*worker1chunk);
-				if(meshes[neededChunks[index].index].length > 0){
-					neededMeshBuffers.push_back(neededChunks[index].index);
-					realMeshes.push_back(neededChunks[index].index);
+			else {
+				timeBenchmark(0);
+				unsigned int index = 0;
+				while (index < meshesAmount) {
+					worker1chunk->create(neededChunks[index].x, neededChunks[index].y, neededChunks[index].z);
+					meshes[neededChunks[index].index].fillChunk(*worker1chunk);
+					if (meshes[neededChunks[index].index].length > 0) {
+						{
+							std::lock_guard<std::mutex> lk(realMeshesQueueMutex);
+							realMeshesQueue.push(neededChunks[index].index);
+						}
+						realMeshesQueueCV.notify_one();
+					}
+					index++;
+					static int lastPercent = -1;
+					int percent = int((float(totalChunksGenerated) / neededThreadGeneratedChunks) * 100);
+					if (percent != lastPercent) {
+						std::cout << percent << "%\n";
+						lastPercent = percent;
+					}
+					if (joinableThreads[0] == false) break;
 				}
-				neededChunks.erase(neededChunks.begin() + index);
-				static int lastPercent = -1;
-				int percent = int((float(totalChunksGenerated) / neededThreadGeneratedChunks) * 100);
-				if (percent != lastPercent) {
-				    std::cout << percent << "%\n";
-				    lastPercent = percent;
-				}	
-				if(joinableThreads[0] == false) break;
+				worker1Finished = true;
+				generate = false;
+				neededChunks.clear();
+				timeBenchmark(1);
 			}
-			worker1Finished = true;
-			generate = false;
-			neededMeshBuffers.clear();
-			timeBenchmark(1);
+
 		}
-		
-	}
-	if(joinableThreads[0] == false) break;
+		if (joinableThreads[0] == false) break;
 	}
 	std::cout << "\nWORKER1 THREAD ENDED";
 }
 
-void setSpawn(float x, float z){
+void setSpawn(float x, float z) {
 	x = round(int(x) / 10) * 10.0f;
 	z = round(int(z) / 10) * 10.0f;
-    std::vector<float> meshHeights;
-	if(meshesAmount > 0){
- 		for(int i = 0; i < meshesAmount; i++){
-        	if(meshes[i].X == x && meshes[i].Z == z && meshes[i].length > 0) meshHeights.push_back(meshes[i].Y);
-    	}
+	std::vector<float> meshHeights;
+	if (meshesAmount > 0) {
+		for (int i = 0; i < meshesAmount; i++) {
+			if (meshes[i].X == x && meshes[i].Z == z && meshes[i].length > 0) meshHeights.push_back(meshes[i].Y);
+		}
 		auto autoMax = std::max_element(meshHeights.begin(), meshHeights.end());
 		int max = *autoMax;
-    	camera.Position.y = chunk->calcNoise(camera.Position.x, camera.Position.z, 1) + 15;
+		camera.Position.y = chunk->calcNoise(camera.Position.x, camera.Position.z, 1) + 15;
 	}
 }

@@ -1,3 +1,4 @@
+
 #ifndef SHADER_H
 #define SHADER_H
 
@@ -246,7 +247,7 @@ public:
     short distanceI = 1;
     FastNoiseLite noise;
     FastNoiseLite largeNoise;
-    Chunk(){
+    Chunk() {
         initialNoiseSet();
     }
 
@@ -255,7 +256,7 @@ public:
         create(X, Y, Z);
     }
 
-    void initialNoiseSet(){
+    void initialNoiseSet() {
         this->noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
         this->noise.SetSeed(0);
         this->noise.SetFrequency(0.002f);
@@ -269,14 +270,15 @@ public:
         largeNoise.SetFrequency(0.002f);
     }
     float calcNoise(float x, float z, bool absolute) {
-        if(!absolute){
+        if (!absolute) {
             z = (z * voxelWidths + Z);
             x = (x * voxelWidths + X);
         }
         float currentNoise = 0.0f;
-        if (storedNoise.count(glm::vec2(x, z)) == 1){
+        if (storedNoise.count(glm::vec2(x, z)) == 1) {
             currentNoise = storedNoise[glm::vec2(x, z)];
-        }else{
+        }
+        else {
             currentNoise = noise.GetNoise(x, z);
             float plusNoise = largeNoise.GetNoise(x, z);
             plusNoise *= 300.0f;
@@ -298,62 +300,65 @@ public:
         this->empty = true;
         //30 chunks: 16.315    PB: 16.315
         //12 chunks: 6.905     PB: 6.905
-        if(debug.useLOD){
+        if (debug.useLOD) {
             distanceI = neighborDistanceI(X, Y, Z, 0.0f, 0.0f, 0.0f);
-        }else{
+        }
+        else {
             distanceI = 1;
         }
         short heights[40][40];
-        for (int z = 0; z < widths; z+=distanceI) {
-            for (int x = 0; x < widths; x+=distanceI) {
+        for (int z = 0; z < widths; z += distanceI) {
+            for (int x = 0; x < widths; x += distanceI) {
                 float currentNoise = calcNoise(x + distanceI / 2, z + distanceI / 2, 0);
                 heights[x][z] = -1;
-                for (int y = 0; y < widths; y+=distanceI) {
-                    
+                for (int y = 0; y < widths; y += distanceI) {
+
                     unsigned short blockType = (currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f);
                     this->objects[x + this->widths * (z + this->widths * y)] = blockType;
-                    if(blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
-                    if(this->empty || this->solid){
-                        if (blockType != 0){
+                    if (blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
+                    if (this->empty || this->solid) {
+                        if (blockType != 0) {
                             this->empty = false;
-                            if(this->solid == true){
-                                if(distanceI == 40){
-                                    if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                    if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                            if (this->solid == true) {
+                                if (distanceI == 40) {
+                                    if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     float tempNoise = calcNoise(x + distanceI / 2 - distanceI, z + distanceI / 2, 0);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     tempNoise = calcNoise(x + distanceI / 2 + distanceI, z + distanceI / 2, 0);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 - distanceI, 0);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 + distanceI, 0);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }else{
-                                    if(y == 0){
-                                        if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                }
+                                else {
+                                    if (y == 0) {
+                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if(y == widths - distanceI){
-                                        if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (y == widths - distanceI) {
+                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if(x == 0){
+                                    if (x == 0) {
                                         float tempNoise = calcNoise(x - distanceI, z, 0);
-                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if(x == widths - distanceI){
+                                    if (x == widths - distanceI) {
                                         float tempNoise = calcNoise(x + distanceI, z, 0);
-                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if(z == 0){
+                                    if (z == 0) {
                                         float tempNoise = calcNoise(x, z - distanceI, 0);
-                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if(z == widths - distanceI){
+                                    if (z == widths - distanceI) {
                                         float tempNoise = calcNoise(x, z + distanceI, 0);
-                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
                                 }
                             }
-                        }else{
+                        }
+                        else {
                             this->solid = false;
                         }
                     }
@@ -361,13 +366,13 @@ public:
             }
         }
 
-        for (int z = 0; z < widths; z+=distanceI) {
-            for (int x = 0; x < widths; x+=distanceI) {
-                if(heights[x][z] != -1){
+        for (int z = 0; z < widths; z += distanceI) {
+            for (int x = 0; x < widths; x += distanceI) {
+                if (heights[x][z] != -1) {
                     this->objects[x + this->widths * (z + this->widths * heights[x][z])] = 2;
-                    if(heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
-                    if(heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
-                    if(heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
+                    if (heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
+                    if (heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
+                    if (heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
                 }
             }
         }
@@ -493,7 +498,7 @@ public:
         updateBuffers();
     }
 
-    
+
 
     void fillChunk(Chunk& chunk) {
         delete[] this->vertices;
@@ -527,120 +532,127 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
 exposedFaces[exposed] = true;\
 }\
 
-                        if(debug.useLOD){
-                            // y-min (face 0)
-                            if(y > 0){
-                                if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y - distanceI))] == 0) addVertices(0);
-                            }else{
-                                for(int xL = 0; xL < distanceI; xL++){
-                                    for(int zL = 0; zL < distanceI; zL++){
-                                        if(chunk.closeBlock(x + xL, -1, z + zL, otherLODchunks[0]) == 0) addVertices(0);
-                                        goto f0exit;
+                            if (debug.useLOD) {
+                                // y-min (face 0)
+                                if (y > 0) {
+                                    if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y - distanceI))] == 0) addVertices(0);
+                                }
+                                else {
+                                    for (int xL = 0; xL < distanceI; xL++) {
+                                        for (int zL = 0; zL < distanceI; zL++) {
+                                            if (chunk.closeBlock(x + xL, -1, z + zL, otherLODchunks[0]) == 0) addVertices(0);
+                                            goto f0exit;
+                                        }
                                     }
                                 }
-                            }
                             f0exit: NULL;
-                            // y-max (face 1)
-                            if(y < chunk.widths - distanceI){
-                                if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y + distanceI))] == 0) addVertices(1);
-                            }else{
-                                for(int xL = 0; xL < distanceI; xL++){
-                                    for(int zL = 0; zL < distanceI; zL++){
-                                        if(chunk.closeBlock(x + xL, y + distanceI, z + zL, otherLODchunks[1]) == 0) addVertices(1);
-                                        goto f1exit;
+                                // y-max (face 1)
+                                if (y < chunk.widths - distanceI) {
+                                    if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y + distanceI))] == 0) addVertices(1);
+                                }
+                                else {
+                                    for (int xL = 0; xL < distanceI; xL++) {
+                                        for (int zL = 0; zL < distanceI; zL++) {
+                                            if (chunk.closeBlock(x + xL, y + distanceI, z + zL, otherLODchunks[1]) == 0) addVertices(1);
+                                            goto f1exit;
+                                        }
                                     }
                                 }
-                            }
                             f1exit: NULL;
-                            // x-min (face 2)
-                            if(x > 0){
-                                if (chunk.objects[(x - distanceI) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(2);
-                            }else{
-                                for(int yL = 0; yL < distanceI; yL++){
-                                    for(int zL = 0; zL < distanceI; zL++){
-                                        if(chunk.closeBlock(-distanceI, y + yL, z + zL, otherLODchunks[2]) == 0) addVertices(2);
-                                        goto f2exit;
+                                // x-min (face 2)
+                                if (x > 0) {
+                                    if (chunk.objects[(x - distanceI) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(2);
+                                }
+                                else {
+                                    for (int yL = 0; yL < distanceI; yL++) {
+                                        for (int zL = 0; zL < distanceI; zL++) {
+                                            if (chunk.closeBlock(-distanceI, y + yL, z + zL, otherLODchunks[2]) == 0) addVertices(2);
+                                            goto f2exit;
+                                        }
                                     }
                                 }
-                            }
                             f2exit: NULL;
-                            // x-max (face 3)
-                            if(x < chunk.widths - distanceI){
-                                if (chunk.objects[(x + distanceI) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(3);
-                            }else{
-                                for(int yL = 0; yL < distanceI; yL++){
-                                    for(int zL = 0; zL < distanceI; zL++){
-                                        if(chunk.closeBlock(x + distanceI, y + yL, z + zL, otherLODchunks[3]) == 0) addVertices(3);
-                                        goto f3exit;
+                                // x-max (face 3)
+                                if (x < chunk.widths - distanceI) {
+                                    if (chunk.objects[(x + distanceI) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(3);
+                                }
+                                else {
+                                    for (int yL = 0; yL < distanceI; yL++) {
+                                        for (int zL = 0; zL < distanceI; zL++) {
+                                            if (chunk.closeBlock(x + distanceI, y + yL, z + zL, otherLODchunks[3]) == 0) addVertices(3);
+                                            goto f3exit;
+                                        }
                                     }
                                 }
-                            }
                             f3exit: NULL;
-                            // z-min (face 4)
-                            if(z > 0){
-                                if (chunk.objects[x + chunk.widths * ((z - distanceI) + chunk.widths * y)] == 0) addVertices(4);
-                            }else{
-                                for(int yL = 0; yL < distanceI; yL++){
-                                    for(int xL = 0; xL < distanceI; xL++){
-                                        if(chunk.closeBlock(x + xL, y + yL, -distanceI, otherLODchunks[4]) == 0) addVertices(4);
-                                        goto f4exit;
+                                // z-min (face 4)
+                                if (z > 0) {
+                                    if (chunk.objects[x + chunk.widths * ((z - distanceI) + chunk.widths * y)] == 0) addVertices(4);
+                                }
+                                else {
+                                    for (int yL = 0; yL < distanceI; yL++) {
+                                        for (int xL = 0; xL < distanceI; xL++) {
+                                            if (chunk.closeBlock(x + xL, y + yL, -distanceI, otherLODchunks[4]) == 0) addVertices(4);
+                                            goto f4exit;
+                                        }
                                     }
                                 }
-                            }
                             f4exit: NULL;
-                            // z-max (face 5)
-                            if(z < chunk.widths - distanceI){
-                                if (chunk.objects[x + chunk.widths * ((z + distanceI) + chunk.widths * y)] == 0) addVertices(5);
-                            }else{
-                                for(int yL = 0; yL < distanceI; yL++){
-                                    for(int xL = 0; xL < distanceI; xL++){
-                                        if(chunk.closeBlock(x + xL, y + yL, z + distanceI, otherLODchunks[5]) == 0) addVertices(5);
-                                        goto f5exit;
+                                // z-max (face 5)
+                                if (z < chunk.widths - distanceI) {
+                                    if (chunk.objects[x + chunk.widths * ((z + distanceI) + chunk.widths * y)] == 0) addVertices(5);
+                                }
+                                else {
+                                    for (int yL = 0; yL < distanceI; yL++) {
+                                        for (int xL = 0; xL < distanceI; xL++) {
+                                            if (chunk.closeBlock(x + xL, y + yL, z + distanceI, otherLODchunks[5]) == 0) addVertices(5);
+                                            goto f5exit;
+                                        }
                                     }
                                 }
-                            }
                             f5exit: NULL;
-                            
-                        }else{
-                            //no LOD
-                            if (y > 0) {
-                                if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y - 1))] == 0) addVertices(0);
+
                             }
                             else {
-                                if (chunk.closeBlock(x, -1, z, 1) == 0) addVertices(0);
+                                //no LOD
+                                if (y > 0) {
+                                    if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y - 1))] == 0) addVertices(0);
+                                }
+                                else {
+                                    if (chunk.closeBlock(x, -1, z, 1) == 0) addVertices(0);
+                                }
+                                if (y < chunk.widths - 1) {
+                                    if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y + 1))] == 0) addVertices(1);
+                                }
+                                else {
+                                    if (chunk.closeBlock(x, 40, z, 1) == 0) addVertices(1);
+                                }
+                                if (x > 0) {
+                                    if (chunk.objects[(x - 1) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(2);
+                                }
+                                else {
+                                    if (chunk.closeBlock(-1, y, z, 1) == 0) addVertices(2);
+                                }
+                                if (x < chunk.widths - 1) {
+                                    if (chunk.objects[(x + 1) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(3);
+                                }
+                                else {
+                                    if (chunk.closeBlock(40, y, z, 1) == 0) addVertices(3);
+                                }
+                                if (z > 0) {
+                                    if (chunk.objects[x + chunk.widths * ((z - 1) + chunk.widths * y)] == 0) addVertices(4);
+                                }
+                                else {
+                                    if (chunk.closeBlock(x, y, -1, 1) == 0) addVertices(4);
+                                }
+                                if (z < chunk.widths - 1) {
+                                    if (chunk.objects[x + chunk.widths * ((z + 1) + chunk.widths * y)] == 0) addVertices(5);
+                                }
+                                else {
+                                    if (chunk.closeBlock(x, y, 40, 1) == 0) addVertices(5);
+                                }
                             }
-                            if (y < chunk.widths - 1) {
-                                if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y + 1))] == 0) addVertices(1);
-                            }
-                            else {
-                                if (chunk.closeBlock(x, 40, z, 1) == 0) addVertices(1);
-                            }
-                            if (x > 0) {
-                                if (chunk.objects[(x - 1) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(2);
-                            }
-                            else {
-                                if (chunk.closeBlock(-1, y, z, 1) == 0) addVertices(2);
-                            }
-                            if (x < chunk.widths - 1) {
-                                if (chunk.objects[(x + 1) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(3);
-                            }
-                            else {
-                                if (chunk.closeBlock(40, y, z, 1) == 0) addVertices(3);
-                            }
-                            if (z > 0) {
-                                if (chunk.objects[x + chunk.widths * ((z - 1) + chunk.widths * y)] == 0) addVertices(4);
-                            }
-                            else {
-                                if (chunk.closeBlock(x, y, -1, 1) == 0) addVertices(4);
-                            }
-                            if (z < chunk.widths - 1) {
-                                if (chunk.objects[x + chunk.widths * ((z + 1) + chunk.widths * y)] == 0) addVertices(5);
-                            }
-                            else {
-                                if (chunk.closeBlock(x, y, 40, 1) == 0) addVertices(5);
-                            }
-                        }
-                            
+
                         }
                     }
                 }
@@ -653,7 +665,8 @@ exposedFaces[exposed] = true;\
                 if (i < this->length) this->vertices[i] = verticesTemp[i];
             }
             //updateIndices();
-        } else {
+        }
+        else {
             this->vertices = new unsigned int[0];
             this->length = 0;
         }
@@ -699,5 +712,71 @@ private:
 
 };
 
+
+class frameBuffer {
+public:
+
+    void screenUpdate(int newWidth, int newHeight) {
+        if (newWidth <= 0 || newHeight <= 0) return;
+        if ((unsigned)newWidth == width && (unsigned)newHeight == height) return;
+
+        width = static_cast<unsigned int>(newWidth);
+        height = static_cast<unsigned int>(newHeight);
+
+        // Update color texture storage
+        glBindTexture(GL_TEXTURE_2D, colorAttachment);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, nullptr);
+
+        // Update renderbuffer storage
+        glBindRenderbuffer(GL_RENDERBUFFER, depthAttachment);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+
+        // Keep texture bound as caller needs it; no framebuffer rebind required here
+    }
+
+    void build(unsigned int width, unsigned int height) {
+        glGenFramebuffers(1, &frameBufferPrivate);
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBufferPrivate);
+
+        glGenTextures(1, &colorAttachment);
+        glBindTexture(GL_TEXTURE_2D, colorAttachment);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA8, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+
+        glFramebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, colorAttachment, 0);
+
+        glGenRenderbuffers(1, &depthAttachment);
+        glBindRenderbuffer(GL_RENDERBUFFER, depthAttachment);
+        glRenderbufferStorage(GL_RENDERBUFFER, GL_DEPTH24_STENCIL8, width, height);
+        glFramebufferRenderbuffer(GL_FRAMEBUFFER, GL_DEPTH_STENCIL_ATTACHMENT, GL_RENDERBUFFER, depthAttachment);
+
+        if (glCheckFramebufferStatus(GL_FRAMEBUFFER) != GL_FRAMEBUFFER_COMPLETE) std::cout << "ERROR::FRAMEBUFFER:: Framebuffer is not complete!" << std::endl;
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        this->width = width;
+        this->height = height;
+    }
+
+    ~frameBuffer() {
+        glDeleteFramebuffers(1, &frameBufferPrivate);
+        glDeleteTextures(1, &colorAttachment);
+        glDeleteRenderbuffers(1, &depthAttachment);
+    }
+
+    void drawTo() {
+        glBindFramebuffer(GL_FRAMEBUFFER, frameBufferPrivate);
+        glViewport(0, 0, width > 0 ? width : 1, height > 0 ? height : 1);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
+    }
+
+    void readFrom() {
+        glActiveTexture(GL_TEXTURE0);
+        glBindTexture(GL_TEXTURE_2D, colorAttachment);
+    }
+private:
+    unsigned int frameBufferPrivate, colorAttachment, depthAttachment, width, height;
+};
 
 #endif
