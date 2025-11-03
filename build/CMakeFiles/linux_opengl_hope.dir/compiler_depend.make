@@ -1360,6 +1360,20 @@ CMakeFiles/linux_opengl_hope.dir/src/main.cpp.o: /home/user/Documents/c++/LinuxH
   /usr/include/c++/12/ratio \
   /usr/include/c++/12/ctime \
   /usr/include/c++/12/bits/parse_numbers.h \
+  /usr/include/c++/12/queue \
+  /usr/include/c++/12/deque \
+  /usr/include/c++/12/bits/stl_deque.h \
+  /usr/include/c++/12/bits/deque.tcc \
+  /usr/include/c++/12/bits/stl_queue.h \
+  /usr/include/c++/12/mutex \
+  /usr/include/c++/12/bits/std_mutex.h \
+  /usr/include/c++/12/bits/unique_lock.h \
+  /usr/include/c++/12/condition_variable \
+  /usr/include/c++/12/functional \
+  /usr/include/c++/12/bits/std_function.h \
+  /usr/include/c++/12/array \
+  /usr/include/c++/12/compare \
+  /usr/include/c++/12/atomic \
   /home/user/Documents/c++/LinuxHope/src/glad.h \
   /usr/include/KHR/khrplatform.h \
   /usr/include/GLFW/glfw3.h \
@@ -1414,10 +1428,6 @@ CMakeFiles/linux_opengl_hope.dir/src/main.cpp.o: /home/user/Documents/c++/LinuxH
   /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_vec3.hpp \
   /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_vec3.inl \
   /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/compute_vector_decl.hpp \
-  /usr/include/c++/12/functional \
-  /usr/include/c++/12/bits/std_function.h \
-  /usr/include/c++/12/array \
-  /usr/include/c++/12/compare \
   /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/_vectorize.hpp \
   /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/vector_bool3_precision.hpp \
   /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/vector_float3.hpp \
@@ -1849,6 +1859,22 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float4x4_precision.hpp:
 
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/func_exponential.inl:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/exponential.hpp:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/func_geometric.inl:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/geometric.hpp:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat4x4.inl:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double4x4.hpp:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float4x3_precision.hpp:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float4x3.hpp:
+
 /usr/lib/gcc/x86_64-linux-gnu/12/include/tbmintrin.h:
 
 /usr/include/c++/12/bits/unordered_map.h:
@@ -1935,8 +1961,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/avxintrin.h:
 
-/usr/lib/gcc/x86_64-linux-gnu/12/include/smmintrin.h:
-
 /usr/include/x86_64-linux-gnu/c++/12/bits/basic_file.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/movdirintrin.h:
@@ -1971,8 +1995,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/lwpintrin.h:
 
-/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
-
 /usr/lib/gcc/x86_64-linux-gnu/12/include/avx512vnniintrin.h:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/lzcntintrin.h:
@@ -1980,8 +2002,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/vector_bool4.hpp:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/clzerointrin.h:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double4x4.hpp:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/cldemoteintrin.h:
 
@@ -1994,6 +2014,10 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double4x3_precision.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/pthread_stack_min-dynamic.h:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/smmintrin.h:
+
+/usr/include/c++/12/bits/stl_queue.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat3x4.hpp:
 
@@ -2084,8 +2108,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 /usr/include/x86_64-linux-gnu/bits/types/struct_sigstack.h:
 
 /usr/include/c++/12/ext/numeric_traits.h:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/geometric.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/unistd_ext.h:
 
@@ -2231,6 +2253,10 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/sigset_t.h:
 
+/usr/include/x86_64-linux-gnu/bits/types/__fpos_t.h:
+
+/usr/include/c++/12/deque:
+
 /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends/imgui_impl_glfw.cpp:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui.cpp:
@@ -2307,6 +2333,10 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /usr/include/c++/12/bits/uniform_int_dist.h:
 
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/mat4x4.hpp:
+
+/usr/include/x86_64-linux-gnu/sys/wait.h:
+
 /usr/include/GL/glext.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/gtc/constants.inl:
@@ -2327,8 +2357,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double3x4_precision.hpp:
 
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float4x3.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/sigevent-consts.h:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_FILE.h:
@@ -2336,8 +2364,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 /usr/include/x86_64-linux-gnu/bits/typesizes.h:
 
 /usr/include/c++/12/bits/stl_pair.h:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat4x4.inl:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends/imgui_impl_glfw.h:
 
@@ -2382,8 +2408,6 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 /usr/include/c++/12/bits/ostream.tcc:
 
 /usr/lib/gcc/x86_64-linux-gnu/12/include/popcntintrin.h:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/func_exponential.inl:
 
 /usr/include/x86_64-linux-gnu/bits/setjmp.h:
 
@@ -2431,17 +2455,11 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 
 /usr/include/c++/12/stdlib.h:
 
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/exponential.hpp:
-
 /usr/include/x86_64-linux-gnu/bits/select.h:
 
 /usr/include/x86_64-linux-gnu/bits/time.h:
 
 /usr/include/x86_64-linux-gnu/bits/thread-shared-types.h:
-
-/usr/lib/gcc/x86_64-linux-gnu/12/include/xsaveintrin.h:
-
-/usr/include/c++/12/functional:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include/ft2build.h:
 
@@ -2542,6 +2560,8 @@ resources/libraries/freetype/include/freetype/config/ftoption.h:
 /usr/include/x86_64-linux-gnu/bits/types/idtype_t.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_draw.cpp:
+
+/usr/include/c++/12/mutex:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imstb_truetype.h:
 
@@ -2671,6 +2691,8 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 
 /usr/include/x86_64-linux-gnu/bits/cpu-set.h:
 
+/usr/include/c++/12/bits/stl_deque.h:
+
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double4x4_precision.hpp:
 
 /usr/include/x86_64-linux-gnu/bits/types/struct_itimerspec.h:
@@ -2773,6 +2795,8 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 
 /usr/include/c++/12/bits/stl_multimap.h:
 
+/usr/include/c++/12/condition_variable:
+
 /usr/include/c++/12/tuple:
 
 /usr/include/c++/12/unordered_map:
@@ -2820,6 +2844,30 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/_vectorize.hpp:
 
 /usr/include/c++/12/bits/parse_numbers.h:
+
+/usr/include/c++/12/queue:
+
+/usr/lib/gcc/x86_64-linux-gnu/12/include/xsaveintrin.h:
+
+/usr/include/c++/12/functional:
+
+/usr/include/c++/12/bits/deque.tcc:
+
+/usr/include/c++/12/bits/std_mutex.h:
+
+/usr/include/c++/12/bits/std_function.h:
+
+/usr/include/c++/12/array:
+
+/usr/include/c++/12/compare:
+
+/usr/include/c++/12/atomic:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_half.inl:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double2x3_precision.hpp:
+
+/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float3x3_precision.hpp:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/glm.hpp:
 
@@ -2870,12 +2918,6 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat2x2.inl:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_vec3.hpp:
-
-/usr/include/c++/12/bits/std_function.h:
-
-/usr/include/c++/12/array:
-
-/usr/include/c++/12/compare:
 
 /usr/include/c++/12/cstddef:
 
@@ -2931,12 +2973,6 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat2x3.inl:
 
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_half.inl:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double2x3_precision.hpp:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float3x3_precision.hpp:
-
 /usr/include/c++/12/string_view:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float2x3_precision.hpp:
@@ -2985,6 +3021,8 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/mat3x4.hpp:
 
+/usr/include/c++/12/bits/unique_lock.h:
+
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_double3x4.hpp:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat3x4.inl:
@@ -3002,11 +3040,3 @@ resources/libraries/freetype/include/freetype/config/ftconfig.h:
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat4x3.hpp:
 
 /home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/type_mat4x3.inl:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/ext/matrix_float4x3_precision.hpp:
-
-/usr/include/x86_64-linux-gnu/sys/wait.h:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/mat4x4.hpp:
-
-/home/user/Documents/c++/LinuxHope/resources/libraries/glm/glm/detail/func_geometric.inl:

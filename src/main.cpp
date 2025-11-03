@@ -856,7 +856,7 @@ int main() {
 		skyboxShader.setMat4("pv", projection * view);
 		glBindVertexArray(skyboxVAO);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
-		//glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
 
 		horizontalBlurShader.use();
 		horizontalBlurShader.setInt("post", 0);
@@ -880,7 +880,7 @@ int main() {
 		horizontalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		darkHorizontalBlurBuffer.drawTo();
+		/*darkHorizontalBlurBuffer.drawTo();
 		horizontalBlurShader.use();
 		horizontalBlurShader.setInt("post", 2);
 		glActiveTexture(GL_TEXTURE0);
@@ -892,27 +892,29 @@ int main() {
 		verticalBlurShader.setInt("post", 2);
 		glActiveTexture(GL_TEXTURE0);
 		darkHorizontalBlurBuffer.readFrom();
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 6);*/
 
 		//draw to screen after populating buffers
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
-		/*verticalBlurShader.use();
-		verticalBlurShader.setInt("post", 1);
-		glActiveTexture(GL_TEXTURE0);
-		verticalBlurBuffer.readFrom();
-		glDrawArrays(GL_TRIANGLES, 0, 6);*/
-
+		/*
 		verticalBlurShader.use();
 		verticalBlurShader.setInt("post", 2);
 		glActiveTexture(GL_TEXTURE0);
 		darkVerticalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
+		*/
 
-		/*plainTerrainBuffer.readFrom();
+		verticalBlurShader.use();
+		verticalBlurShader.setInt("post", 1);
+		glActiveTexture(GL_TEXTURE0);
+		verticalBlurBuffer.readFrom();
+		glDrawArrays(GL_TRIANGLES, 0, 6);
+
+		plainTerrainBuffer.readFrom();
 		horizontalBlurShader.use();
 		horizontalBlurShader.setInt("post", 0);
-		glDrawArrays(GL_TRIANGLES, 0, 6);*/
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glEnable(GL_DEPTH_TEST);
 
