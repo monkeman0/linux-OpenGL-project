@@ -13,6 +13,7 @@
 #include <condition_variable>
 #include <functional>
 #include <atomic>
+#include <filesystem>
 
 #include "glad.h"
 #include <GLFW/glfw3.h>
@@ -74,11 +75,15 @@ struct vec3Hash {
 std::unordered_map<glm::vec2, float, vec2Hash> storedNoise;
 int totalChunksGenerated = 0;
 float bytesFromMeshes = 0;
+unsigned int bytesFromChunks = 0;
 
 #include "tileHandling.h"
 #include "naturalTiles.cpp"
 #include "classes.h"
 #include "cameraClass.h"
+
+std::vector<std::string> ramChunksStrings;
+std::vector<objectData> ramChunks;
 
 double pi = 3.141592653589793;
 float deltaTime = 0.0f;
@@ -168,6 +173,8 @@ frameBuffer plainTerrainBuffer;
 frameBuffer darkHorizontalBlurBuffer;
 frameBuffer darkVerticalBlurBuffer;
 
+template <typename T>
+unsigned int sizeOf(T container, unsigned int length);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -348,14 +355,12 @@ std::mutex meshesAllocMutex;
 std::condition_variable meshesAllocCV;
 
 int main() {
-
 	srand(static_cast<unsigned int>(time(NULL)));
 	glfwInit();
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DECORATED, GL_FALSE);
-	//glfwWindowHint(GLFW_SAMPLES, 4);
 	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	window_width = mode->width;
 	window_height = mode->height;
@@ -395,7 +400,21 @@ int main() {
 
 	if (extraThreads < 1) joinableThreads[0] = false;
 
-
+	//loads existing chunk data into ram
+	ramChunksStrings.push_back("start");
+	std::fstream chunkFile;
+    chunkFile.open("../resources/data/storedChunks.wrld", std::ios::in);
+    if (chunkFile.is_open()) {
+        std::string line;
+        while (getline(chunkFile, line)) {
+			if(line[0] == '#'){
+				ramChunksStrings.push_back(line);
+				objectData temp;
+				ramChunks.push_back(temp);
+			}
+        }
+        chunkFile.close();
+    }
 
 
 	//initialize fonts and openGL settings
@@ -857,14 +876,10 @@ int main() {
 		glBindVertexArray(skyboxVAO);
 		glBindTexture(GL_TEXTURE_CUBE_MAP, cubemapTexture);
 		glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
-
-		horizontalBlurShader.use();
-		horizontalBlurShader.setInt("post", 0);
-		plainTerrainBuffer.readFrom();
 		glBindVertexArray(screenQuadVAO);
-		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//draw to buffers
+		horizontalBlurShader.use();
 		horizontalBlurBuffer.drawTo();
 		horizontalBlurShader.setMat4("view", view);
 		horizontalBlurShader.setInt("post", 1);
@@ -880,7 +895,7 @@ int main() {
 		horizontalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		/*darkHorizontalBlurBuffer.drawTo();
+		darkHorizontalBlurBuffer.drawTo();
 		horizontalBlurShader.use();
 		horizontalBlurShader.setInt("post", 2);
 		glActiveTexture(GL_TEXTURE0);
@@ -892,18 +907,10 @@ int main() {
 		verticalBlurShader.setInt("post", 2);
 		glActiveTexture(GL_TEXTURE0);
 		darkHorizontalBlurBuffer.readFrom();
-		glDrawArrays(GL_TRIANGLES, 0, 6);*/
+		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		//draw to screen after populating buffers
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
-
-		/*
-		verticalBlurShader.use();
-		verticalBlurShader.setInt("post", 2);
-		glActiveTexture(GL_TEXTURE0);
-		darkVerticalBlurBuffer.readFrom();
-		glDrawArrays(GL_TRIANGLES, 0, 6);
-		*/
 
 		verticalBlurShader.use();
 		verticalBlurShader.setInt("post", 1);
@@ -911,9 +918,10 @@ int main() {
 		verticalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
-		plainTerrainBuffer.readFrom();
-		horizontalBlurShader.use();
-		horizontalBlurShader.setInt("post", 0);
+		verticalBlurShader.use();
+		verticalBlurShader.setInt("post", 2);
+		glActiveTexture(GL_TEXTURE0);
+		darkVerticalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
 		glEnable(GL_DEPTH_TEST);
@@ -1033,6 +1041,9 @@ int main() {
 			shaderProgramBlocks.setMat4("model", model);
 			glDrawArrays(GL_TRIANGLES, 72, 6);
 		}*/
+
+		if(pressed(BUTTON_F)) bytesFromChunks = sizeOf(ramChunksStrings, ramChunksStrings.size());
+
 		if (pressed(BUTTON_8) && generate == false) {
 			bytesFromMeshes = 0;
 			unsigned int count = 0;
@@ -1080,6 +1091,7 @@ int main() {
 		ImGui::Text("FPS: = %i", debug.FPS);
 		ImGui::Text("X: = %f, Y: %f, Z: %f", camera.Position.x, camera.Position.y, camera.Position.z);
 		ImGui::Text("Memory from meshes, bytes: = %.f, KB: %.f, MB: %.f", bytesFromMeshes, bytesFromMeshes / 1000, bytesFromMeshes / 1000000);
+		ImGui::Text("Memory from chunks, bytes: = %i, KB: %i, MB: %i", bytesFromChunks, bytesFromChunks / 1000, bytesFromChunks / 1000000);
 		ImGui::SliderFloat("Render Distance", &sliderTester1, 1, 100, "%.f", 0);
 
 		ImGui::End();
@@ -1094,19 +1106,41 @@ int main() {
 	ImGui_ImplGlfw_Shutdown();
 	ImGui::DestroyContext();
 	joinableThreads[0] = false;
+	// Wake up all possible waits in worker thread
+	SMqueueCV.notify_all();
+	meshesAllocCV.notify_all();
+	realMeshesQueueCV.notify_all();
 	worker1.join();
+	if(chunkFile.is_open()) chunkFile.close();
 	delete chunk;
+	chunk = nullptr;
 	delete worker1chunk;
+	worker1chunk = nullptr;
 	delete[] meshes;
+	meshes = nullptr;
 	glDeleteVertexArrays(1, &foliageVAO);
 	glDeleteBuffers(1, &foliageVBO);
 	shaderProgramBlocks.Delete();
 	foliageShader.Delete();
 	text1Shader.Delete();
+	skyboxShader.Delete();
+	lightObjectShader.Delete();
+	lightOutlineShader.Delete();
+	debugShader.Delete();
+	horizontalBlurShader.Delete();
+	verticalBlurShader.Delete();
 	glfwTerminate();
 	return 0;
 }
 
+template <typename T>
+unsigned int sizeOf(T container, unsigned int length){
+	unsigned int total = 0;
+	for(int i = 0; i < length; i++){
+		total += sizeof(container[i]);
+	}
+	return total;
+}
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 {

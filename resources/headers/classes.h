@@ -234,11 +234,19 @@ public:
 
 };
 
+extern std::vector<std::string> ramChunksStrings;
+
+struct objectData{
+    unsigned short objects[64000];
+};
+
+extern std::vector<objectData> ramChunks;
+
 class Chunk {
 public:
     static const short widths = 40;
     const float voxelWidths = 0.25f;
-    unsigned short objects[widths * widths * widths] = { 1 };
+    unsigned short objects[widths * widths * widths] = { 0 };
     bool empty = true;
     bool solid = true;
     float X = 0;
@@ -293,94 +301,87 @@ public:
     }
 
     void create(float X, float Y, float Z) {
-        this->X = X;
-        this->Y = Y;
-        this->Z = Z;
-        this->solid = true;
-        this->empty = true;
-        //30 chunks: 16.315    PB: 16.315
-        //12 chunks: 6.905     PB: 6.905
-        if (debug.useLOD) {
-            distanceI = neighborDistanceI(X, Y, Z, 0.0f, 0.0f, 0.0f);
-        }
-        else {
-            distanceI = 1;
-        }
-        short heights[40][40];
-        for (int z = 0; z < widths; z += distanceI) {
-            for (int x = 0; x < widths; x += distanceI) {
-                float currentNoise = calcNoise(x + distanceI / 2, z + distanceI / 2, 0);
-                heights[x][z] = -1;
-                for (int y = 0; y < widths; y += distanceI) {
-
-                    unsigned short blockType = (currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f);
-                    this->objects[x + this->widths * (z + this->widths * y)] = blockType;
-                    if (blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
-                    if (this->empty || this->solid) {
-                        if (blockType != 0) {
-                            this->empty = false;
-                            if (this->solid == true) {
-                                if (distanceI == 40) {
-                                    if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                    if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                    float tempNoise = calcNoise(x + distanceI / 2 - distanceI, z + distanceI / 2, 0);
-                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                    tempNoise = calcNoise(x + distanceI / 2 + distanceI, z + distanceI / 2, 0);
-                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                    tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 - distanceI, 0);
-                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                    tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 + distanceI, 0);
-                                    if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                                else {
+        unsigned int line = search(X, Y, Z);
+        if (line != 0) {
+            this->X = X;
+            this->Y = Y;
+            this->Z = Z;
+            readChunkString(line);
+        } else {
+            this->X = X;
+            this->Y = Y;
+            this->Z = Z;
+            this->solid = true;
+            this->empty = true;
+            //30 chunks: 16.315    PB: 16.315
+            //12 chunks: 6.905     PB: 6.905
+            if (debug.useLOD) {
+                distanceI = neighborDistanceI(X, Y, Z, 0.0f, 0.0f, 0.0f);
+            }
+            else {
+                distanceI = 1;
+            }
+            short heights[40][40];
+            for (int z = 0; z < widths; z++) {
+                for (int x = 0; x < widths; x++) {
+                    float currentNoise = calcNoise(x, z, 0);
+                    heights[x][z] = -1;
+                    for (int y = 0; y < widths; y++) {
+                        unsigned short blockType = (currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f);
+                        this->objects[x + this->widths * (z + this->widths * y)] = blockType;
+                        if (blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + 1)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
+                        if (this->empty || this->solid) {
+                            if (blockType != 0) {
+                                this->empty = false;
+                                if (this->solid == true) {
                                     if (y == 0) {
-                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 2)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (y == widths - distanceI) {
-                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if (y == widths - 1) {
+                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
                                     if (x == 0) {
-                                        float tempNoise = calcNoise(x - distanceI, z, 0);
+                                        float tempNoise = calcNoise(x - 1, z, 0);
                                         if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (x == widths - distanceI) {
-                                        float tempNoise = calcNoise(x + distanceI, z, 0);
+                                    if (x == widths - 1) {
+                                        float tempNoise = calcNoise(x + 1, z, 0);
                                         if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
                                     if (z == 0) {
-                                        float tempNoise = calcNoise(x, z - distanceI, 0);
+                                        float tempNoise = calcNoise(x, z - 1, 0);
                                         if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (z == widths - distanceI) {
-                                        float tempNoise = calcNoise(x, z + distanceI, 0);
+                                    if (z == widths - 1) {
+                                        float tempNoise = calcNoise(x, z + 1, 0);
                                         if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
                                 }
                             }
-                        }
-                        else {
-                            this->solid = false;
+                            else {
+                                this->solid = false;
+                            }
                         }
                     }
                 }
             }
-        }
-
-        for (int z = 0; z < widths; z += distanceI) {
-            for (int x = 0; x < widths; x += distanceI) {
-                if (heights[x][z] != -1) {
-                    this->objects[x + this->widths * (z + this->widths * heights[x][z])] = 2;
-                    if (heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
-                    if (heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
-                    if (heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
+            for (int z = 0; z < widths; z++) {
+                for (int x = 0; x < widths; x++) {
+                    if (heights[x][z] != -1) {
+                        this->objects[x + this->widths * (z + this->widths * heights[x][z])] = 2;
+                        if (heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
+                        if (heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
+                        if (heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
+                    }
                 }
             }
+            writeChunk();
         }
     }
 
     unsigned short closeBlock(int offsetX, float offsetY, int offsetZ, short distanceI2) {
         float currentNoise = calcNoise(offsetX + distanceI2 / 2, offsetZ + distanceI2 / 2, 0);
-        return static_cast<unsigned short>((currentNoise - Y - (widths * voxelWidths) + ((widths - (offsetY - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f));
+        return static_cast<unsigned short>((currentNoise - Y - (widths * voxelWidths) + ((widths - (offsetY - 1)) * voxelWidths) + floor(widths * voxelWidths)) > -1.0f);
     }
 
     short neighborDistanceI(float chunkX, float chunkY, float chunkZ, float xoffset, float yoffset, float zoffset) {
@@ -393,8 +394,102 @@ public:
 
     }
 private:
-};
 
+    void writeChunk(){
+        std::fstream chunkFile;
+        chunkFile.open("../resources/data/storedChunks.wrld", std::ios::app);
+        if (chunkFile.is_open()) {
+            std::string line = "";
+            line += ("#" + std::to_string(int(X)) + "|" + std::to_string(int(Y)) + "|" + std::to_string(int(Z)) + "|");
+            int amount = 0;
+            short currentObject = 0;
+            for (int i = 0; i < 64000; i++) {
+                if (this->objects[i] == currentObject) {
+                    amount++;
+                }
+                else {
+                    if (amount > 0)  line += (std::to_string(currentObject) + ">" + std::to_string(amount) + "|");
+                    currentObject = this->objects[i];
+                    amount = 1;
+                }
+            }
+            line += std::to_string(currentObject) + ">" + std::to_string(amount) + "|#" + std::to_string(int(empty)) + std::to_string(int(solid));
+            
+            chunkFile << line << '\n';
+            ramChunksStrings.push_back(line);
+            chunkFile.close();
+        }
+    }
+
+    void readChunkString(unsigned int lineNumber) {
+        unsigned int place = 0;
+        std::string line = ramChunksStrings[lineNumber];
+        for (int i = 0; i < 3; i++) {
+            while (line[place] != '|') {
+                place++;
+            }
+            place++;
+        }
+        unsigned short type = line[place] - '0';
+        place += 2;
+        unsigned int previ = 0;
+        empty = bool(line[line.length() - 2] - '0');
+        solid = bool(line[line.length() - 1] - '0');
+        if (empty) {
+            std::fill(std::begin(objects), std::end(objects), 0);
+        } else {
+            while (line[place] != '#') {
+                std::string snum = "";
+                while (line[place] != '|') {
+                    snum += line[place++];
+                }
+                for (int i = 0; i < std::stoi(snum); i++) {
+                    this->objects[previ++] = type;
+                }
+                place++;
+                if (line[place] != '#') {
+                    type = line[place] - '0';
+                    place += 2;
+                }
+                else {
+                    break;
+                }
+            }
+        }
+    }
+
+    unsigned int search(float X, float Y, float Z) {
+        int x = 0, y = 0, z = 0;
+        for(int j = 0; j < ramChunksStrings.size(); j++){
+            std::string line = ramChunksStrings[j];
+            if (line[0] == '#') {
+                unsigned int i = 1;
+                std::string sx = "";
+                while (line[i] != '|') {
+                    sx += line[i++];
+                }
+                i++;
+                x = static_cast<int>(std::stoi(sx));
+                std::string sy = "";
+                while (line[i] != '|') {
+                    sy += line[i++];
+                }
+                i++;
+                y = static_cast<int>(std::stoi(sy));
+                std::string sz = "";
+                while (line[i] != '|') {
+                    sz += line[i++];
+                }
+                i++;
+                z = static_cast<int>(std::stoi(sz));
+                if (x == X && y == Y && z == Z) {
+                    return j;
+                }
+            }
+        }
+        return 0;
+    }
+};
 
 class Mesh {
 public:
@@ -540,7 +635,7 @@ exposedFaces[exposed] = true;\
                                 else {
                                     for (int xL = 0; xL < distanceI; xL++) {
                                         for (int zL = 0; zL < distanceI; zL++) {
-                                            if (chunk.closeBlock(x + xL, -1, z + zL, otherLODchunks[0]) == 0) addVertices(0);
+                                            if (chunk.closeBlock(x + xL, -distanceI, z + zL, otherLODchunks[0]) == 0) addVertices(0);
                                             goto f0exit;
                                         }
                                     }
@@ -569,7 +664,7 @@ exposedFaces[exposed] = true;\
                                             if (chunk.closeBlock(-distanceI, y + yL, z + zL, otherLODchunks[2]) == 0) addVertices(2);
                                             goto f2exit;
                                         }
-                                    }
+                                    } 
                                 }
                             f2exit: NULL;
                                 // x-max (face 3)

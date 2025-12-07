@@ -216,6 +216,17 @@ CMakeFiles/linux_opengl_hope.dir/src/main.cpp.o: \
  /usr/include/c++/12/condition_variable /usr/include/c++/12/functional \
  /usr/include/c++/12/bits/std_function.h /usr/include/c++/12/array \
  /usr/include/c++/12/compare /usr/include/c++/12/atomic \
+ /usr/include/c++/12/filesystem /usr/include/c++/12/bits/fs_fwd.h \
+ /usr/include/c++/12/bits/fs_path.h /usr/include/c++/12/locale \
+ /usr/include/c++/12/bits/locale_facets_nonio.h \
+ /usr/include/x86_64-linux-gnu/c++/12/bits/time_members.h \
+ /usr/include/x86_64-linux-gnu/c++/12/bits/messages_members.h \
+ /usr/include/libintl.h /usr/include/c++/12/bits/codecvt.h \
+ /usr/include/c++/12/bits/locale_facets_nonio.tcc \
+ /usr/include/c++/12/bits/locale_conv.h /usr/include/c++/12/iomanip \
+ /usr/include/c++/12/bits/quoted_string.h /usr/include/c++/12/sstream \
+ /usr/include/c++/12/bits/sstream.tcc /usr/include/c++/12/codecvt \
+ /usr/include/c++/12/bits/fs_dir.h /usr/include/c++/12/bits/fs_ops.h \
  /home/user/Documents/c++/LinuxHope/src/glad.h \
  /usr/include/KHR/khrplatform.h /usr/include/GLFW/glfw3.h \
  /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui.h \
@@ -449,9 +460,8 @@ CMakeFiles/linux_opengl_hope.dir/src/main.cpp.o: \
  /home/user/Documents/c++/LinuxHope/resources/headers/classes.h \
  /home/user/Documents/c++/LinuxHope/resources/headers/stb_image.h \
  /home/user/Documents/c++/LinuxHope/resources/headers/cameraClass.h \
- /usr/include/c++/12/fstream /usr/include/c++/12/bits/codecvt.h \
+ /usr/include/c++/12/fstream \
  /usr/include/x86_64-linux-gnu/c++/12/bits/basic_file.h \
  /usr/include/x86_64-linux-gnu/c++/12/bits/c++io.h \
- /usr/include/c++/12/bits/fstream.tcc /usr/include/c++/12/sstream \
- /usr/include/c++/12/bits/sstream.tcc \
+ /usr/include/c++/12/bits/fstream.tcc \
  /home/user/Documents/c++/LinuxHope/resources/headers/cameraClass.h
