@@ -402,6 +402,10 @@ int main() {
 
 	//loads existing chunk data into ram
 	ramChunksStrings.push_back("start");
+	objectData* blankChunkFileData;
+	blankChunkFileData = new objectData;
+	ramChunks.push_back(*blankChunkFileData);
+	delete blankChunkFileData;
 	std::fstream chunkFile;
     chunkFile.open("../resources/data/storedChunks.wrld", std::ios::in);
     if (chunkFile.is_open()) {
