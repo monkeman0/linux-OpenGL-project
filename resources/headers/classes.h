@@ -423,6 +423,7 @@ private:
 
     void readChunkString(unsigned int lineNumber) {
         unsigned int place = 0;
+        //test...
         std::string line = ramChunksStrings[lineNumber];
         for (int i = 0; i < 3; i++) {
             while (line[place] != '|') {
