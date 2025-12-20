@@ -1,0 +1,252 @@
+[
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/src/main.cpp.o -c /home/user/Documents/c++/LinuxHope/src/main.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/src/main.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/cc  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/src/glad.c.o -c /home/user/Documents/c++/LinuxHope/src/glad.c",
+  "file": "/home/user/Documents/c++/LinuxHope/src/glad.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/src/inputHandler.cpp.o -c /home/user/Documents/c++/LinuxHope/src/inputHandler.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/src/inputHandler.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/src/stb_image.cpp.o -c /home/user/Documents/c++/LinuxHope/src/stb_image.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/src/stb_image.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/resources/libraries/imgui/imgui_draw.cpp.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_draw.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_draw.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/resources/libraries/imgui/imgui_tables.cpp.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_tables.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_tables.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/resources/libraries/imgui/imgui_widgets.cpp.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_widgets.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui_widgets.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/resources/libraries/imgui/imgui.cpp.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/imgui.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/resources/libraries/imgui/backends/imgui_impl_glfw.cpp.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends/imgui_impl_glfw.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends/imgui_impl_glfw.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build",
+  "command": "/usr/bin/c++  -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -o CMakeFiles/linux_opengl_hope.dir/resources/libraries/imgui/backends/imgui_impl_opengl3.cpp.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends/imgui_impl_opengl3.cpp",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends/imgui_impl_opengl3.cpp"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/autofit/autofit.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/autofit/autofit.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/autofit/autofit.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftbase.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbase.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbase.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftbbox.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbbox.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbbox.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftbdf.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbdf.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbdf.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftbitmap.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbitmap.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftbitmap.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftcid.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftcid.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftcid.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftfstype.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftfstype.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftfstype.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftgasp.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftgasp.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftgasp.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftglyph.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftglyph.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftglyph.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftgxval.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftgxval.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftgxval.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftinit.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftinit.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftinit.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftmm.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftmm.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftmm.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftotval.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftotval.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftotval.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftpatent.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftpatent.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftpatent.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftpfr.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftpfr.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftpfr.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftstroke.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftstroke.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftstroke.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftsynth.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftsynth.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftsynth.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftsystem.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftsystem.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftsystem.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/fttype1.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/fttype1.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/fttype1.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftwinfnt.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftwinfnt.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftwinfnt.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/bdf/bdf.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/bdf/bdf.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/bdf/bdf.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/bzip2/ftbzip2.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/bzip2/ftbzip2.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/bzip2/ftbzip2.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/cache/ftcache.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/cache/ftcache.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/cache/ftcache.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/cff/cff.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/cff/cff.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/cff/cff.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/cid/type1cid.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/cid/type1cid.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/cid/type1cid.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/gzip/ftgzip.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/gzip/ftgzip.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/gzip/ftgzip.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/lzw/ftlzw.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/lzw/ftlzw.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/lzw/ftlzw.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/pcf/pcf.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/pcf/pcf.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/pcf/pcf.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/pfr/pfr.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/pfr/pfr.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/pfr/pfr.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/psaux/psaux.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/psaux/psaux.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/psaux/psaux.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/pshinter/pshinter.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/pshinter/pshinter.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/pshinter/pshinter.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/psnames/psnames.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/psnames/psnames.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/psnames/psnames.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/raster/raster.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/raster/raster.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/raster/raster.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/sfnt/sfnt.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/sfnt/sfnt.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/sfnt/sfnt.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/smooth/smooth.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/smooth/smooth.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/smooth/smooth.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/truetype/truetype.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/truetype/truetype.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/truetype/truetype.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/type1/type1.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/type1/type1.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/type1/type1.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/type42/type42.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/type42/type42.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/type42/type42.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/winfonts/winfnt.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/winfonts/winfnt.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/winfonts/winfnt.c"
+},
+{
+  "directory": "/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype",
+  "command": "/usr/bin/cc -DFT2_BUILD_LIBRARY -I/home/user/Documents/c++/LinuxHope/resources/libraries/glm -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui -I/home/user/Documents/c++/LinuxHope/resources/libraries/imgui/backends -I/home/user/Documents/c++/LinuxHope/resources/headers -I/home/user/Documents/c++/LinuxHope/resources/data -I/home/user/Documents/c++/LinuxHope/resources/shaders -I/home/user/Documents/c++/LinuxHope/resources/fonts -I/home/user/Documents/c++/LinuxHope/resources/textures -I/home/user/Documents/c++/LinuxHope/build/resources/libraries/freetype/include -I/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/include -g -fvisibility=hidden -o CMakeFiles/freetype.dir/src/base/ftdebug.c.o -c /home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftdebug.c",
+  "file": "/home/user/Documents/c++/LinuxHope/resources/libraries/freetype/src/base/ftdebug.c"
+}
+]
