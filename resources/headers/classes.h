@@ -277,11 +277,32 @@ public:
         largeNoise.SetSeed(0);
         largeNoise.SetFrequency(0.002f);
     }
-    float calcNoise(float x, float z, bool absolute) {
-        if (!absolute) {
-            z = (z * voxelWidths + Z);
-            x = (x * voxelWidths + X);
+    float calcNoise(float x, float z) {
+        z = (z * voxelWidths + Z);
+        x = (x * voxelWidths + X);
+        float currentNoise = 0.0f;
+        if (storedNoise.count(glm::vec2(x, z)) == 1){
+            currentNoise = storedNoise[glm::vec2(x, z)];
+        }else{
+            currentNoise = this->noise.GetNoise(x, z);
+            FastNoiseLite largeNoise;
+            largeNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
+            largeNoise.SetSeed(0);
+            largeNoise.SetFrequency(0.002f);
+            float plusNoise = largeNoise.GetNoise(x, z);
+            plusNoise *= 200.0f;
+            currentNoise *= 10.0f;
+            currentNoise = currentNoise * currentNoise * currentNoise;
+            currentNoise -= (sin(x) * cos(z)) * (currentNoise / 70);
+            currentNoise += plusNoise;
+            storedNoise[glm::vec2(x, z)] = currentNoise;
         }
+        return currentNoise;
+    }
+
+    float calcNoiseAbsolute(float x, float z) {
+        z = (z * voxelWidths);
+        x = (x * voxelWidths);
         float currentNoise = 0.0f;
         if (storedNoise.count(glm::vec2(x, z)) == 1) {
             currentNoise = storedNoise[glm::vec2(x, z)];
@@ -301,19 +322,12 @@ public:
     }
 
     void create(float X, float Y, float Z) {
-        unsigned int line = search(X, Y, Z);
-        if (line != 0) {
-            this->X = X;
-            this->Y = Y;
-            this->Z = Z;
-            readChunkString(line);
-        } else {
             this->X = X;
             this->Y = Y;
             this->Z = Z;
             this->solid = true;
             this->empty = true;
-            //30 chunks: 16.315    PB: 16.315
+            //35 chunks: 15.783    PB: 15.783
             //12 chunks: 6.905     PB: 6.905
             if (debug.useLOD) {
                 distanceI = neighborDistanceI(X, Y, Z, 0.0f, 0.0f, 0.0f);
@@ -322,65 +336,77 @@ public:
                 distanceI = 1;
             }
             short heights[40][40];
-            for (int z = 0; z < widths; z++) {
-                for (int x = 0; x < widths; x++) {
-                    float currentNoise = calcNoise(x, z, 0);
-                    heights[x][z] = -1;
-                    for (int y = 0; y < widths; y++) {
-                        unsigned short blockType = (currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f);
-                        this->objects[x + this->widths * (z + this->widths * y)] = blockType;
-                        if (blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + 1)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
-                        if (this->empty || this->solid) {
-                            if (blockType != 0) {
-                                this->empty = false;
-                                if (this->solid == true) {
-                                    if (y == 0) {
-                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 2)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+            for (int z = 0; z < widths; z+=distanceI) {
+            for (int x = 0; x < widths; x+=distanceI) {
+                float currentNoise = calcNoise(x + distanceI / 2, z + distanceI / 2);
+                heights[x][z] = -1;
+                for (int y = 0; y < widths; y+=distanceI) {
+                    
+                    unsigned short blockType = (currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f);
+                    this->objects[x + this->widths * (z + this->widths * y)] = blockType;
+                    if(blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
+                    if(this->empty || this->solid){
+                        if (blockType != 0){
+                            this->empty = false;
+                            if(this->solid == true){
+                                if(distanceI == 40){
+                                    if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    float tempNoise = calcNoise(x + distanceI / 2 - distanceI, z + distanceI / 2);
+                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    tempNoise = calcNoise(x + distanceI / 2 + distanceI, z + distanceI / 2);
+                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 - distanceI);
+                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 + distanceI);
+                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                }else{
+                                    if(y == 0){
+                                        if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (y == widths - 1) {
-                                        if (!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if(y == widths - distanceI){
+                                        if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (x == 0) {
-                                        float tempNoise = calcNoise(x - 1, z, 0);
-                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if(x == 0){
+                                        float tempNoise = calcNoise(x - distanceI, z);
+                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (x == widths - 1) {
-                                        float tempNoise = calcNoise(x + 1, z, 0);
-                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if(x == widths - distanceI){
+                                        float tempNoise = calcNoise(x + distanceI, z);
+                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (z == 0) {
-                                        float tempNoise = calcNoise(x, z - 1, 0);
-                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if(z == 0){
+                                        float tempNoise = calcNoise(x, z - distanceI);
+                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
-                                    if (z == widths - 1) {
-                                        float tempNoise = calcNoise(x, z + 1, 0);
-                                        if (!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
+                                    if(z == widths - distanceI){
+                                        float tempNoise = calcNoise(x, z + distanceI);
+                                        if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
                                     }
                                 }
                             }
-                            else {
-                                this->solid = false;
-                            }
+                        }else{
+                            this->solid = false;
                         }
                     }
                 }
             }
-            for (int z = 0; z < widths; z++) {
-                for (int x = 0; x < widths; x++) {
-                    if (heights[x][z] != -1) {
-                        this->objects[x + this->widths * (z + this->widths * heights[x][z])] = 2;
-                        if (heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
-                        if (heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
-                        if (heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
-                    }
+        }
+
+        for (int z = 0; z < widths; z+=distanceI) {
+            for (int x = 0; x < widths; x+=distanceI) {
+                if(heights[x][z] != -1){
+                    this->objects[x + this->widths * (z + this->widths * heights[x][z])] = 2;
+                    if(heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
+                    if(heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
+                    if(heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
                 }
             }
-            writeChunk();
         }
     }
 
     unsigned short closeBlock(int offsetX, float offsetY, int offsetZ, short distanceI2) {
-        float currentNoise = calcNoise(offsetX + distanceI2 / 2, offsetZ + distanceI2 / 2, 0);
+        float currentNoise = calcNoise(offsetX + distanceI2 / 2, offsetZ + distanceI2 / 2);
         return static_cast<unsigned short>((currentNoise - Y - (widths * voxelWidths) + ((widths - (offsetY - 1)) * voxelWidths) + floor(widths * voxelWidths)) > -1.0f);
     }
 

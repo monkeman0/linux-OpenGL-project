@@ -656,7 +656,7 @@ int main() {
 		"../resources/textures/atlasSpecular.png",
 		"../resources/textures/atlas(1).png",
 		"../resources/textures/atlas(2).png",
-		"../resources/textures/atlas(3).png",
+		"../resources/textures/atlas(3).png",	
 		"../resources/textures/atlas(4).png",
 		"../resources/textures/atlas(5).png"
 	};
@@ -884,13 +884,15 @@ int main() {
 
 		//draw to buffers
 		horizontalBlurShader.use();
-		horizontalBlurBuffer.drawTo();
+		//horizontalBlurBuffer.drawTo(); replace lower line with this when done
+		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 		horizontalBlurShader.setMat4("view", view);
-		horizontalBlurShader.setInt("post", 1);
-		glActiveTexture(GL_TEXTURE0);
+		horizontalBlurShader.setInt("post", 0);
+		//glActiveTexture(GL_TEXTURE0);
 		plainTerrainBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
 
+		/*
 		verticalBlurBuffer.drawTo();
 		verticalBlurShader.use();
 		verticalBlurShader.setMat4("view", view);
@@ -921,12 +923,12 @@ int main() {
 		glActiveTexture(GL_TEXTURE0);
 		verticalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);
-
+		
 		verticalBlurShader.use();
 		verticalBlurShader.setInt("post", 2);
 		glActiveTexture(GL_TEXTURE0);
 		darkVerticalBlurBuffer.readFrom();
-		glDrawArrays(GL_TRIANGLES, 0, 6);
+		glDrawArrays(GL_TRIANGLES, 0, 6);*/
 
 		glEnable(GL_DEPTH_TEST);
 
@@ -1409,6 +1411,6 @@ void setSpawn(float x, float z) {
 		}
 		auto autoMax = std::max_element(meshHeights.begin(), meshHeights.end());
 		int max = *autoMax;
-		camera.Position.y = chunk->calcNoise(camera.Position.x, camera.Position.z, 1) + 15;
+		camera.Position.y = chunk->calcNoiseAbsolute(camera.Position.x, camera.Position.z) + 15;
 	}
 }
