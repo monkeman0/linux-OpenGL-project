@@ -1,7 +1,33 @@
-#include <bitset>
+#ifndef TILE_HANDLING_H
+#define TILE_HANDLING_H
 
-unsigned int DATA;
-unsigned int test[] = { 1, 5, 2, 9, 0, 0, 3, 2, 6, 7 };
+#include <bitset>
+#include <iostream>
+#include <map>
+#include <algorithm>
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <glm/gtc/type_ptr.hpp>
+
+// Forward declarations for naturalTiles
+struct verts {
+    unsigned int data[36];
+};
+
+extern std::map<short, verts> naturalTiles;
+void loadTiles();
+void DisplayData(short key, bool binary);
+
+// Global variable declarations (definitions are in tileHandling.cpp)
+extern unsigned int DATA;
+extern unsigned int test[10];
+extern float fullScreenQuadVertices[24];
+extern float skyboxVertices[8];
+extern unsigned int skyboxIndices[36];
+extern float debugVertices[108];
+extern unsigned int foliageVertices[220];
+extern unsigned int tileVertices[108];
+extern float halfBlock[108];
 
 template<typename T>
 unsigned int elementsSum(T array[], unsigned int index1, unsigned int index2) {
@@ -13,7 +39,7 @@ unsigned int elementsSum(T array[], unsigned int index1, unsigned int index2) {
 }
 
 //uses binary search, unsigned ints only
-bool arrayContains(unsigned int array[], unsigned int element, unsigned int arrayLength) {
+inline bool arrayContains(unsigned int array[], unsigned int element, unsigned int arrayLength) {
 	unsigned int* tempArray = new unsigned int[arrayLength];
 	std::copy(array, array + arrayLength, tempArray);
 	std::sort(tempArray, tempArray + arrayLength);
@@ -34,7 +60,7 @@ T difference(T num1, T num2) {
 	return 0;
 }
 
-unsigned short clampShort(unsigned short min, unsigned short value, unsigned short max) {
+inline unsigned short clampShort(unsigned short min, unsigned short value, unsigned short max) {
 	if (value > max) {
 		return max;
 	}
@@ -44,7 +70,7 @@ unsigned short clampShort(unsigned short min, unsigned short value, unsigned sho
 	return value;
 }
 
-unsigned int clampUint(unsigned int min, unsigned int value, unsigned int max) {
+inline unsigned int clampUint(unsigned int min, unsigned int value, unsigned int max) {
 	if (value > max) {
 		return max;
 	}
@@ -54,7 +80,7 @@ unsigned int clampUint(unsigned int min, unsigned int value, unsigned int max) {
 	return value;
 }
 
-float clampFloat(float min, float value, float max) {
+inline float clampFloat(float min, float value, float max) {
 	if (value > max) {
 		return max;
 	}
@@ -64,20 +90,20 @@ float clampFloat(float min, float value, float max) {
 	return value;
 }
 
-void flipBit(short place) {
+inline void flipBit(short place) {
 	 DATA ^= (1u << place);
 }
 
-void bitOne(short place) {
+inline void bitOne(short place) {
 	DATA |= (1u << place);
 }
 
-void bitZero(short place) {
+inline void bitZero(short place) {
 	DATA &= ~(1u << place);
 }
 
 //Pack Vertex Data Voxel, for chunk data not available yet put 69420
-unsigned int PVDV(unsigned int corner, unsigned int texture, unsigned int normal, unsigned int chunkPlace) {
+inline unsigned int PVDV(unsigned int corner, unsigned int texture, unsigned int normal, unsigned int chunkPlace) {
 	DATA = 0x00000000000000000000000000000000;
 	corner = clampShort(0, corner, 7);
 	texture = clampShort(0, texture, 1023);
@@ -91,7 +117,7 @@ unsigned int PVDV(unsigned int corner, unsigned int texture, unsigned int normal
 	return DATA;
 }
 //example: unpackSingle(PVDV(0, 992, 4, 8720), 0);
-glm::vec3 unpackSingle(unsigned int Data, int returnType) {
+inline glm::vec3 unpackSingle(unsigned int Data, int returnType) {
 	glm::vec3 toReturn = glm::vec3(0.0f, 0.0f, 0.0f);
 	if (returnType == 0) {
 		unsigned int index = Data >> 16 & 65535u;
@@ -303,19 +329,8 @@ glm::vec3 unpackSingle(unsigned int Data, int returnType) {
 	return toReturn;
 }
 
-
-
-
-
-
-
-
-
-
-
-
 // x, y, z values must be -5.11 to 5.11, is unit cube
-unsigned int PVD1(float x, float y, float z) {
+inline unsigned int PVD1(float x, float y, float z) {
 	DATA = 0x00000000000000000000000000000000;
 	x = clampFloat(-5.11f, x, 5.11f);
 	y = clampFloat(-5.11f, y, 5.11f);
@@ -338,7 +353,7 @@ unsigned int PVD1(float x, float y, float z) {
 }
 
 //texture X, decimalX, texture Y, decimal Y, material
-unsigned int PVD2(unsigned int texX, unsigned int texXdecimal, unsigned int texY, unsigned int texYdecimal, short material) {
+inline unsigned int PVD2(unsigned int texX, unsigned int texXdecimal, unsigned int texY, unsigned int texYdecimal, short material) {
 	DATA = 0x00000000000000000000000000000000;
 	texX = clampUint(0, texX, 32);
 	texY = clampUint(0, texY, 32);
@@ -355,7 +370,7 @@ unsigned int PVD2(unsigned int texX, unsigned int texXdecimal, unsigned int texY
 }
 
 //normals
-unsigned int PVD3(float normX, float normY, float normZ) {
+inline unsigned int PVD3(float normX, float normY, float normZ) {
 	DATA = 0x00000000000000000000000000000000;
 	normX = clampFloat(-1.0f, normX, 1.0f);
 	normY = clampFloat(-1.0f, normY, 1.0f);
@@ -374,7 +389,7 @@ unsigned int PVD3(float normX, float normY, float normZ) {
 }
 
 //make all unsigned int's to uint for proper shader syntax
-glm::vec3 unpack1(unsigned int Data) {
+inline glm::vec3 unpack1(unsigned int Data) {
 	float x = ((Data & 511u) * 0.01f);
 	if ((Data & 134217728) == 134217728) x *= -1.0f;
 	float y = ((Data >> 9 & 511u) * 0.01f);
@@ -386,7 +401,7 @@ glm::vec3 unpack1(unsigned int Data) {
 	return toReturn;
 }
 
-glm::vec3 unpack2(unsigned int Data) {
+inline glm::vec3 unpack2(unsigned int Data) {
 	float texX = (((Data & 63) * 32.0f) + (Data >> 6 & 31)) / 1024.0f;
 	float texY = (((Data >> 11 & 63) * 32.0f) + (Data >> 17 & 31)) / 1024.0f;
 	float material = float(Data >> 22 & 1023);
@@ -396,7 +411,7 @@ glm::vec3 unpack2(unsigned int Data) {
 	return toReturn;
 }
 
-glm::vec3 unpack3(unsigned int Data) {
+inline glm::vec3 unpack3(unsigned int Data) {
 	float x = (Data & 511) / 511.0f;
 	if ((Data & 134217728) == 134217728) x *= -1.f;
 	float y = (Data >> 9 & 511) / 511.0f;
@@ -408,527 +423,12 @@ glm::vec3 unpack3(unsigned int Data) {
 	return toReturn;
 }
 
-void arrayRange(unsigned int array[], unsigned int index0, unsigned int index1, unsigned int toFill[]) {
+inline void arrayRange(unsigned int array[], unsigned int index0, unsigned int index1, unsigned int toFill[]) {
 	unsigned int size = difference(index0, index1);
 	for (unsigned int i = 0; i < size; i++) {
 		toFill[i] = array[index0 + i];
 	}
 }
 
-float fullScreenQuadVertices[] = {
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	-1.0f, -1.0f,  0.0f, 0.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
 
-	-1.0f,  1.0f,  0.0f, 1.0f,
-	 1.0f, -1.0f,  1.0f, 0.0f,
-	 1.0f,  1.0f,  1.0f, 1.0f
-};
-
-float skyboxVertices[] = {
-	0.f,
-	1.f,
-	2.f,
-	3.f,
-	4.f,
-	5.f,
-	6.f,
-	7.f
-};
-
-unsigned int skyboxIndices[] = {
-	5, 6, 2,
-	2, 1, 5,
-
-	7, 4, 0,
-	0, 3, 7,
-
-	7, 6, 5,
-	5, 4, 7,
-
-	0, 1, 2,
-	2, 3, 0,
-
-	4, 5, 1,
-	1, 0, 4,
-
-	6, 7, 3,
-	3, 2, 6
-};
-
-float debugVertices[] = {
-	0.f, 0.1875f,   1.0f,
-	1.f, 0.21875f,	1.0f,
-	2.f, 0.21875f,	0.96875f,
-	2.f, 0.21875f,	0.96875f,
-	3.f, 0.1875f,	0.96875f,
-	0.f, 0.1875f,   1.0f,
-
-	7.f, 0.1875f,   1.0f,
-	6.f, 0.21875f,	1.0f,
-	5.f, 0.21875f,	0.96875f,
-	5.f, 0.21875f,	0.96875f,
-	4.f, 0.1875f,	0.96875f,
-	7.f, 0.1875f,   1.0f,
-
-	7.f, 0.1875f,   1.0f,
-	4.f, 0.21875f,	1.0f,
-	0.f, 0.21875f,	0.96875f,
-	0.f, 0.21875f,	0.96875f,
-	3.f, 0.1875f,	0.96875f,
-	7.f, 0.1875f,   1.0f,
-
-	5.f, 0.1875f,   1.0f,
-	6.f, 0.21875f,	1.0f,
-	2.f, 0.21875f,	0.96875f,
-	2.f, 0.21875f,	0.96875f,
-	1.f, 0.1875f,	0.96875f,
-	5.f, 0.1875f,   1.0f,
-
-	4.f, 0.1875f,   1.0f,
-	5.f, 0.21875f,	1.0f,
-	1.f, 0.21875f,	0.96875f,
-	1.f, 0.21875f,	0.96875f,
-	0.f, 0.1875f,	0.96875f,
-	4.f, 0.1875f,   1.0f,
-
-	6.f, 0.1875f,   1.0f,
-	7.f, 0.21875f,	1.0f,
-	3.f, 0.21875f,	0.96875f,
-	3.f, 0.21875f,	0.96875f,
-	2.f, 0.1875f,	0.96875f,
-	6.f, 0.1875f,   1.0f,
-
-};
-
-unsigned int foliageVertices[] = {
-//bush1
- PVD2(5, 16, 31, 16, 0), 
-	PVD2(5, 16, 31, 16, 0),
-	PVD2(6, 0, 31, 16, 0),
-	PVD2(5, 16, 31, 20, 0),
-	PVD2(6, 0, 31, 20, 0),
-	PVD2(5, 16, 31, 24, 0),
-	PVD2(6, 0, 31, 24, 0),
-	PVD2(5, 16, 31, 28, 0),
-	PVD2(6, 0, 31, 28, 0),
-	PVD2(5, 16, 32, 0, 0),
-	PVD2(6, 0, 32, 0, 0),
- PVD2(6, 0, 32, 0, 0),
-
- PVD2(5, 16, 31, 16, 0),
-	PVD2(5, 16, 31, 16, 0),
-	PVD2(6, 0, 31, 16, 0),
-	PVD2(5, 16, 31, 20, 0),
-	PVD2(6, 0, 31, 20, 0),
-	PVD2(5, 16, 31, 24, 0),
-	PVD2(6, 0, 31, 24, 0),
-	PVD2(5, 16, 31, 28, 0),
-	PVD2(6, 0, 31, 28, 0),
-	PVD2(5, 16, 32, 0, 0),
-	PVD2(6, 0, 32, 0, 0),
- PVD2(6, 0, 32, 0, 0),
-
- PVD2(5, 16, 31, 16, 0),
-	PVD2(5, 16, 31, 16, 0),
-	PVD2(6, 0, 31, 16, 0),
-	PVD2(5, 16, 31, 20, 0),
-	PVD2(6, 0, 31, 20, 0),
-	PVD2(5, 16, 31, 24, 0),
-	PVD2(6, 0, 31, 24, 0),
-	PVD2(5, 16, 31, 28, 0),
-	PVD2(6, 0, 31, 28, 0),
-	PVD2(5, 16, 32, 0, 0),
-	PVD2(6, 0, 32, 0, 0),
- PVD2(6, 0, 32, 0, 0),
-
- PVD2(5, 16, 31, 16, 0),
-	PVD2(5, 16, 31, 16, 0),
-	PVD2(6, 0, 31, 16, 0),
-	PVD2(5, 16, 31, 20, 0),
-	PVD2(6, 0, 31, 20, 0),
-	PVD2(5, 16, 31, 24, 0),
-	PVD2(6, 0, 31, 24, 0),
-	PVD2(5, 16, 31, 28, 0),
-	PVD2(6, 0, 31, 28, 0),
-	PVD2(5, 16, 32, 0, 0),
-	PVD2(6, 0, 32, 0, 0),
- PVD2(6, 0, 32, 0, 0),
-
- PVD2(5, 16, 31, 16, 0),
-	PVD2(5, 16, 31, 16, 0),
-	PVD2(6, 0, 31, 16, 0),
-	PVD2(5, 16, 31, 20, 0),
-	PVD2(6, 0, 31, 20, 0),
-	PVD2(5, 16, 31, 24, 0),
-	PVD2(6, 0, 31, 24, 0),
-	PVD2(5, 16, 31, 28, 0),
-	PVD2(6, 0, 31, 28, 0),
-	PVD2(5, 16, 32, 0, 0),
-	PVD2(6, 0, 32, 0, 0),
- PVD2(6, 0, 32, 0, 0),
-
- PVD2(5, 16, 31, 16, 0),
-	PVD2(5, 16, 31, 16, 0),
-	PVD2(6, 0, 31, 16, 0),
-	PVD2(5, 16, 31, 20, 0),
-	PVD2(6, 0, 31, 20, 0),
-	PVD2(5, 16, 31, 24, 0),
-	PVD2(6, 0, 31, 24, 0),
-	PVD2(5, 16, 31, 28, 0),
-	PVD2(6, 0, 31, 28, 0),
-	PVD2(5, 16, 32, 0, 0),
-	PVD2(6, 0, 32, 0, 0),
- PVD2(6, 0, 32, 0, 0),
-
- //bush2
- PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 16, 31, 0, 1),
-	PVD2(5, 0, 31, 5, 1),
-	PVD2(5, 16, 31, 5, 1),
-	PVD2(5, 0, 31, 10, 1),
-	PVD2(5, 16, 31, 10, 1),
-	PVD2(5, 0, 31, 16, 1),
-	PVD2(5, 16, 31, 16, 1),
- PVD2(5, 16, 31, 16, 1),
-
- PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 16, 31, 0, 1),
-	PVD2(5, 0, 31, 5, 1),
-	PVD2(5, 16, 31, 5, 1),
-	PVD2(5, 0, 31, 10, 1),
-	PVD2(5, 16, 31, 10, 1),
-	PVD2(5, 0, 31, 16, 1),
-	PVD2(5, 16, 31, 16, 1),
- PVD2(5, 16, 31, 16, 1),
-
- PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 16, 31, 0, 1),
-	PVD2(5, 0, 31, 5, 1),
-	PVD2(5, 16, 31, 5, 1),
-	PVD2(5, 0, 31, 10, 1),
-	PVD2(5, 16, 31, 10, 1),
-	PVD2(5, 0, 31, 16, 1),
-	PVD2(5, 16, 31, 16, 1),
- PVD2(5, 16, 31, 16, 1),
-
- PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 16, 31, 0, 1),
-	PVD2(5, 0, 31, 5, 1),
-	PVD2(5, 16, 31, 5, 1),
-	PVD2(5, 0, 31, 10, 1),
-	PVD2(5, 16, 31, 10, 1),
-	PVD2(5, 0, 31, 16, 1),
-	PVD2(5, 16, 31, 16, 1),
-PVD2(5, 16, 31, 16, 1),
-
- PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 16, 31, 0, 1),
-	PVD2(5, 0, 31, 5, 1),
-	PVD2(5, 16, 31, 5, 1),
-	PVD2(5, 0, 31, 10, 1),
-	PVD2(5, 16, 31, 10, 1),
-	PVD2(5, 0, 31, 16, 1),
-	PVD2(5, 16, 31, 16, 1),
-PVD2(5, 16, 31, 16, 1),
-
- PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 0, 31, 0, 1),
-	PVD2(5, 16, 31, 0, 1),
-	PVD2(5, 0, 31, 5, 1),
-	PVD2(5, 16, 31, 5, 1),
-	PVD2(5, 0, 31, 10, 1),
-	PVD2(5, 16, 31, 10, 1),
-	PVD2(5, 0, 31, 16, 1),
-	PVD2(5, 16, 31, 16, 1),
-PVD2(5, 16, 31, 16, 1),
-
-//grass blade 1
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-
-PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 2, 31, 16, 2),
-	PVD2(5, 16, 31, 16, 2),
-	PVD2(5, 2, 31, 20, 2),
-	PVD2(5, 16, 31, 20, 2),
-	PVD2(5, 2, 31, 25, 2),
-	PVD2(5, 16, 31, 25, 2),
-PVD2(5, 16, 31, 25, 2),
-};
-
-unsigned int tileVertices[] = {
-	//stone
-	PVDV(0, 992, 0, 69420),
-	PVDV(1, 992, 0, 69420),
-	PVDV(2, 992, 0, 69420),
-	PVDV(2, 992, 0, 69420),
-	PVDV(3, 992, 0, 69420),
-	PVDV(0, 992, 0, 69420),
-
-	PVDV(7, 992, 1, 69420),
-	PVDV(6, 992, 1, 69420),
-	PVDV(5, 992, 1, 69420),
-	PVDV(5, 992, 1, 69420),
-	PVDV(4, 992, 1, 69420),
-	PVDV(7, 992, 1, 69420),
-
-	PVDV(7, 992, 2, 69420),
-	PVDV(4, 992, 2, 69420),
-	PVDV(0, 992, 2, 69420),
-	PVDV(0, 992, 2, 69420),
-	PVDV(3, 992, 2, 69420),
-	PVDV(7, 992, 2, 69420),
-
-	PVDV(5, 992, 3, 69420),
-	PVDV(6, 992, 3, 69420),
-	PVDV(2, 992, 3, 69420),
-	PVDV(2, 992, 3, 69420),
-	PVDV(1, 992, 3, 69420),
-	PVDV(5, 992, 3, 69420),
-
-	PVDV(4, 992, 4, 69420),
-	PVDV(5, 992, 4, 69420),
-	PVDV(1, 992, 4, 69420),
-	PVDV(1, 992, 4, 69420),
-	PVDV(0, 992, 4, 69420),
-	PVDV(4, 992, 4, 69420),
-
-	PVDV(6, 992, 5, 69420),
-	PVDV(7, 992, 5, 69420),
-	PVDV(3, 992, 5, 69420),
-	PVDV(3, 992, 5, 69420),
-	PVDV(2, 992, 5, 69420),
-	PVDV(6, 992, 5, 69420),
-
-	//grass
-	PVDV(0, 994, 0, 69420),
-	PVDV(1, 994, 0, 69420),
-	PVDV(2, 994, 0, 69420),
-	PVDV(2, 994, 0, 69420),
-	PVDV(3, 994, 0, 69420),
-	PVDV(0, 994, 0, 69420),
-
-	PVDV(7, 995, 1, 69420),
-	PVDV(6, 995, 1, 69420),
-	PVDV(5, 995, 1, 69420),
-	PVDV(5, 995, 1, 69420),
-	PVDV(4, 995, 1, 69420),
-	PVDV(7, 995, 1, 69420),
-
-	PVDV(7, 993, 2, 69420),
-	PVDV(4, 993, 2, 69420),
-	PVDV(0, 993, 2, 69420),
-	PVDV(0, 993, 2, 69420),
-	PVDV(3, 993, 2, 69420),
-	PVDV(7, 993, 2, 69420),
-
-	PVDV(5, 993, 3, 69420),
-	PVDV(6, 993, 3, 69420),
-	PVDV(2, 993, 3, 69420),
-	PVDV(2, 993, 3, 69420),
-	PVDV(1, 993, 3, 69420),
-	PVDV(5, 993, 3, 69420),
-
-	PVDV(4, 993, 4, 69420),
-	PVDV(5, 993, 4, 69420),
-	PVDV(1, 993, 4, 69420),
-	PVDV(1, 993, 4, 69420),
-	PVDV(0, 993, 4, 69420),
-	PVDV(4, 993, 4, 69420),
-
-	PVDV(6, 993, 5, 69420),
-	PVDV(7, 993, 5, 69420),
-	PVDV(3, 993, 5, 69420),
-	PVDV(3, 993, 5, 69420),
-	PVDV(2, 993, 5, 69420),
-	PVDV(6, 993, 5, 69420),
-
-	//dirt
-	PVDV(0, 994, 0, 69420),
-	PVDV(1, 994, 0, 69420),
-	PVDV(2, 994, 0, 69420),
-	PVDV(2, 994, 0, 69420),
-	PVDV(3, 994, 0, 69420),
-	PVDV(0, 994, 0, 69420),
-
-	PVDV(7, 994, 1, 69420),
-	PVDV(6, 994, 1, 69420),
-	PVDV(5, 994, 1, 69420),
-	PVDV(5, 994, 1, 69420),
-	PVDV(4, 994, 1, 69420),
-	PVDV(7, 994, 1, 69420),
-
-	PVDV(7, 994, 2, 69420),
-	PVDV(4, 994, 2, 69420),
-	PVDV(0, 994, 2, 69420),
-	PVDV(0, 994, 2, 69420),
-	PVDV(3, 994, 2, 69420),
-	PVDV(7, 994, 2, 69420),
-
-	PVDV(5, 994, 3, 69420),
-	PVDV(6, 994, 3, 69420),
-	PVDV(2, 994, 3, 69420),
-	PVDV(2, 994, 3, 69420),
-	PVDV(1, 994, 3, 69420),
-	PVDV(5, 994, 3, 69420),
-
-	PVDV(4, 994, 4, 69420),
-	PVDV(5, 994, 4, 69420),
-	PVDV(1, 994, 4, 69420),
-	PVDV(1, 994, 4, 69420),
-	PVDV(0, 994, 4, 69420),
-	PVDV(4, 994, 4, 69420),
-
-	PVDV(6, 994, 5, 69420),
-	PVDV(7, 994, 5, 69420),
-	PVDV(3, 994, 5, 69420),
-	PVDV(3, 994, 5, 69420),
-	PVDV(2, 994, 5, 69420),
-	PVDV(6, 994, 5, 69420),
-};
-
-float halfBlock[] = {
-	-0.25f, -0.25f, -0.25f,
-	 0.25f, -0.25f, -0.25f,
-	 0.25f,  0.25f, -0.25f,
-	 0.25f,  0.25f, -0.25f,
-	-0.25f,  0.25f, -0.25f,
-	-0.25f, -0.25f, -0.25f,
-	
-	-0.25f, -0.25f,  0.25f,
-	 0.25f, -0.25f,  0.25f,
-	 0.25f,  0.25f,  0.25f,
-	 0.25f,  0.25f,  0.25f,
-	-0.25f,  0.25f,  0.25f,
-	-0.25f, -0.25f,  0.25f,
-	
-	-0.25f,  0.25f,  0.25f,
-	-0.25f,  0.25f, -0.25f,
-	-0.25f, -0.25f, -0.25f,
-	-0.25f, -0.25f, -0.25f,
-	-0.25f, -0.25f,  0.25f,
-	-0.25f,  0.25f,  0.25f,
-	
-	 0.25f,  0.25f,  0.25f,
-	 0.25f,  0.25f, -0.25f,
-	 0.25f, -0.25f, -0.25f,
-	 0.25f, -0.25f, -0.25f,
-	 0.25f, -0.25f,  0.25f,
-	 0.25f,  0.25f,  0.25f,
-	
-	-0.25f, -0.25f, -0.25f,
-	 0.25f, -0.25f, -0.25f,
-	 0.25f, -0.25f,  0.25f,
-	 0.25f, -0.25f,  0.25f,
-	-0.25f, -0.25f,  0.25f,
-	-0.25f, -0.25f, -0.25f,
-	
-	-0.25f,  0.25f, -0.25f,
-	 0.25f,  0.25f, -0.25f,
-	 0.25f,  0.25f,  0.25f,
-	 0.25f,  0.25f,  0.25f,
-	-0.25f,  0.25f,  0.25f,
-	-0.25f,  0.25f, -0.25f,
-};
+#endif // TILE_HANDLING_H

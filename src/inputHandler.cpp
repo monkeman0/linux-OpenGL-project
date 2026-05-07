@@ -47,6 +47,17 @@ enum buttons {
 	BUTTON_Y,
 	BUTTON_Z,
 	BUTTON_LEFT_CTRL,
+	BUTTON_LEFT,
+	BUTTON_RIGHT,
+	BUTTON_UP,
+	BUTTON_DOWN,
+	MOUSE_LEFT,
+	MOUSE_RIGHT,
+	MOUSE_SCROLL_WHEEL,
+	MOUSE_LEFT_BACK,
+	MOUSE_LEFT_FRONT,
+	BUTTON_MINUS,
+	BUTTON_PLUS,
 	BUTTON_COUNT
 };
 
@@ -66,3 +77,8 @@ struct Debug {
 	bool showChunkBorders = false;
 	bool useLOD = true;
 };
+
+#define held(b) input.buttons[b].is_down
+#define pressed(b) (input.buttons[b].is_down && input.buttons[b].is_changed)
+#define released(b) (!input.buttons[b].is_down && input.buttons[b].is_changed)
+

@@ -100,10 +100,34 @@
                 "settings": {
                     "foreground": "#ff15e0"
                 },
+            },
+            {
+                "scope": "entity.name.namespace",
+                "settings": {
+                    "foreground": "#15ad24"
+                },
+            },
+            {
+                "scope": "variable.other.global",
+                "settings": {
+                    "foreground": "#3f45f5"
+                },
             }
         ]
     },
     "github.copilot.enable": {
         "*": false
+    },
+
+    "search.exclude": {
+    "**/node_modules": true,
+    "**/bower_components": true,
+    "**/dist": true,
+    "**/build": true
+    },
+    
+    "files.watcherExclude": {
+        "**/node_modules/**": true,
+        "**/dist/**": true
     }
 }

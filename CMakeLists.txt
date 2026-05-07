@@ -2,6 +2,9 @@ cmake_minimum_required(VERSION 3.10.0)
 project(linux_opengl_hope VERSION 0.1.0 LANGUAGES C CXX)
 cmake_policy(SET CMP0072 NEW)
 
+# Suppress CMake developer warnings from external libraries
+set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE INTERNAL "")
+
 find_package(OpenGL REQUIRED)
 
 add_executable(linux_opengl_hope
@@ -9,6 +12,9 @@ add_executable(linux_opengl_hope
     src/glad.c
     src/inputHandler.cpp
     src/stb_image.cpp
+    src/classes.cpp
+    src/tileHandling.cpp
+    resources/data/naturalTiles.cpp
     resources/libraries/imgui/imgui_draw.cpp
     resources/libraries/imgui/imgui_tables.cpp
     resources/libraries/imgui/imgui_widgets.cpp
@@ -26,6 +32,7 @@ include_directories(
     resources/shaders
     resources/fonts
     resources/textures
+    src/
 )
 
 add_subdirectory(resources/libraries/freetype)

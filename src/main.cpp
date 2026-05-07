@@ -1,7 +1,5 @@
 #include <iostream>
 #include <cmath>
-#include <map>
-#include <unordered_map>
 #include <string>
 #include <time.h>
 #include <vector>
@@ -14,25 +12,26 @@
 #include <functional>
 #include <atomic>
 #include <filesystem>
+#include <unistd.h>
+#include <ios>
+#include <malloc.h>
+#include <sys/sysinfo.h> //needs to be changed for windows ram reading
+#include <sys/resource.h> //same as above
 
 #include "glad.h"
 #include <GLFW/glfw3.h>
 
-#include <imgui.h>
-#include <imgui_impl_glfw.h>
-#include <imgui_impl_opengl3.h>
+#include "imgui.h"
+#include "imgui_impl_glfw.h"
+#include "imgui_impl_opengl3.h"
 
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtc/type_ptr.hpp>
 
-#include "FastNoiseLite.h"
-
 //font loader
 #include <ft2build.h>
 #include FT_FREETYPE_H
-
-#include "inputHandler.cpp"
 
 std::queue<std::function<void()>> startMeshesTaskQueue;
 std::mutex SMqueueMutex;
@@ -40,25 +39,12 @@ std::condition_variable SMqueueCV;
 std::mutex realMeshesQueueMutex;
 std::condition_variable realMeshesQueueCV;
 
-Input input;
-Debug debug;
 float sliderTester1 = 35;
 float sliderTester2 = 40;
 float sliderTester3 = 0.f;
 float t1, t2, t3, t4, t5 = 0.f;
-
-short distanceIncriment[] = {
-	1, 1, 2, 2, 4, 4, 8, 10, 10, 20, 20, 20, 20, 20, 20, 40
-};
-glm::vec3 generatePos = glm::vec3(0.0f, 0.0f, 0.0f);
-
-struct vec2Hash {
-	std::size_t operator()(const glm::vec2& v) const {
-		std::size_t h1 = std::hash<float>{}(v.x);
-		std::size_t h2 = std::hash<float>{}(v.y);
-		return h1 ^ (h2 << 1);
-	}
-};
+int startingWindow_width = 0;
+int startingWindow_height = 0;
 
 struct vec3Hash {
 	std::size_t operator()(const glm::vec3& v) const noexcept {
@@ -72,30 +58,22 @@ struct vec3Hash {
 	}
 };
 
-std::unordered_map<glm::vec2, float, vec2Hash> storedNoise;
-int totalChunksGenerated = 0;
-float bytesFromMeshes = 0;
 unsigned int bytesFromChunks = 0;
 
 #include "tileHandling.h"
-#include "naturalTiles.cpp"
 #include "classes.h"
 #include "cameraClass.h"
-
-std::vector<std::string> ramChunksStrings;
-std::vector<objectData> ramChunks;
 
 double pi = 3.141592653589793;
 float deltaTime = 0.0f;
 float lastTime = 0.0f;
+std::atomic<size_t> freeRam{0};
+std::atomic<size_t> rss{0};
 
 int window_width, window_height;
 glm::vec3 cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
 glm::mat4 projection;
 
-#define held(b) input.buttons[b].is_down
-#define pressed(b) (input.buttons[b].is_down && input.buttons[b].is_changed)
-#define released(b) (!input.buttons[b].is_down && input.buttons[b].is_changed)
 #define debugSpeeds()\
 if (debug.moveMode == '1') {\
 	debug.speed = 0.3f;\
@@ -140,6 +118,17 @@ if (pressed(BUTTON_ESCAPE)){\
 		glfwSetCursorPos(window, window_width / 2.f, window_height / 2.f);\
 	}\
 }\
+if (pressed(BUTTON_F11)){\
+	debug.fullscreen = !debug.fullscreen;\
+	glfwSetWindowAttrib(window, GLFW_DECORATED, !debug.fullscreen);\
+	if(debug.fullscreen) {\
+		glfwSetWindowMonitor(window, glfwGetPrimaryMonitor(), 0, 0, startingWindow_width, startingWindow_height, 60);\
+		glfwSetWindowSize(window, startingWindow_width, startingWindow_height);\
+	} else {\
+		glfwSetWindowMonitor(window, nullptr, 0, 0, startingWindow_width, startingWindow_height, 60);\
+		glfwSetWindowSize(window, static_cast<int>(startingWindow_width * 0.8f), static_cast<int>(startingWindow_height * 0.8f));\
+	}\
+}\
 if (debug.nextFPScounter > debug.FPS) {\
 	debug.nextFPScounter = 0;\
 	debug.FPS = static_cast<short>(1.0f / deltaTime);\
@@ -153,18 +142,6 @@ glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);\
 else {\
 glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);\
 }\
-if (pressed(BUTTON_F11)) {\
-	debug.fullscreen = !debug.fullscreen;\
-	if (debug.fullscreen) {\
-		glfwSetWindowAttrib(window, GLFW_DECORATED, GL_TRUE);\
-		glfwSetWindowMonitor(window, NULL, static_cast<int>(mode->width * 0.025), static_cast<int>(mode->height * 0.04), static_cast<int>(mode->width * 0.95), static_cast<int>(mode->height * 0.95), GLFW_DONT_CARE);\
-	}\
-	else {\
-		glfwSetWindowAttrib(window, GLFW_DECORATED, GL_FALSE);\
-		glfwSetWindowMonitor(window, NULL, 0, 0, mode->width, mode->height, GLFW_DONT_CARE);\
-	}\
-}\
-\
 
 //framebuffers creation
 frameBuffer horizontalBlurBuffer;
@@ -179,31 +156,25 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
+void window_focus_callback(GLFWwindow* window, int focused);
+void mouse_button_callback(GLFWwindow* window, int button, int action, int bits);
 void RenderText(Shader& s, std::string text, float x, float y, float scale, glm::vec3 color);
 void timeBenchmark(bool stop);
 void setSpawn(float x, float z);
 void chunker1();
+void loadTiles();
+void get_free_ram();
+void get_used_ram();
 
-Chunk* worker1chunk;
-Chunk* chunk;
-Mesh* meshes;
+ThreadSafeVector<Chunk> chunks;
+ThreadSafeVector<Mesh> meshes;
 
 int totalChunks = 0;
-int neededThreadGeneratedChunks = 0;
-bool generate = false;
-bool worker1Finished = true;
-bool createAllMeshes = false;
-unsigned int meshesAmount = 0;
+std::atomic<bool> generate{false};
+std::atomic<bool> worker1Finished{true};
 unsigned int completedChunks = 0;
+std::atomic<bool> clearingChunks{false};
 std::queue<unsigned int> realMeshesQueue;
-std::vector<unsigned int> realMeshes;
-
-struct chunkCoords {
-	float x, y, z;
-	unsigned int index;
-};
-
-std::vector<chunkCoords> neededChunks;
 
 bool active = false;
 bool joinableThreads[1] = { true };
@@ -226,7 +197,7 @@ unsigned int textVAO, textVBO;
 unsigned int rbo;
 unsigned int textureColorbuffer;
 unsigned int framebuffer;
-bool makeChunksOrder = false;
+std::atomic<bool> makeChunksOrder{0};
 
 struct Plane {
 	glm::vec3 normal;
@@ -350,9 +321,6 @@ struct Sphere : public Volume {
 
 };
 
-std::atomic<bool> awaitingMeshAlloc(false);
-std::mutex meshesAllocMutex;
-std::condition_variable meshesAllocCV;
 
 int main() {
 	srand(static_cast<unsigned int>(time(NULL)));
@@ -360,14 +328,16 @@ int main() {
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
-	glfwWindowHint(GLFW_DECORATED, GL_FALSE);
+	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
 	window_width = mode->width;
 	window_height = mode->height;
-	debug.fullscreen = false;
+	startingWindow_height = window_height;
+	startingWindow_width = window_width;
+	debug.fullscreen = true;
 	short extraThreads = std::thread::hardware_concurrency() - 1;
 
-	GLFWwindow* window = glfwCreateWindow(window_width, window_height, "openGL window", NULL/*glfwGetPrimaryMonitor()*/, NULL);
+	GLFWwindow* window = glfwCreateWindow(window_width, window_height, "openGL window", glfwGetPrimaryMonitor(), NULL);
 	if (window == NULL)
 	{
 		std::cout << "Failed to create GLFW window" << std::endl;
@@ -382,6 +352,8 @@ int main() {
 	glfwSetKeyCallback(window, key_callback);
 	glfwSetCursorPosCallback(window, mouse_callback);
 	glfwSetScrollCallback(window, scroll_callback);
+	glfwSetMouseButtonCallback(window, mouse_button_callback);
+	glfwSetWindowFocusCallback(window, window_focus_callback);
 
 
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
@@ -399,6 +371,11 @@ int main() {
 	ImGui_ImplOpenGL3_Init("#version 330 core");
 
 	if (extraThreads < 1) joinableThreads[0] = false;
+	size_t totalRam = 0;
+	{
+		struct sysinfo si;
+		if (sysinfo(&si) == 0) totalRam = (si.totalram * si.mem_unit) / (1024 * 1024);
+	}
 
 	//loads existing chunk data into ram
 	ramChunksStrings.push_back("start");
@@ -577,10 +554,7 @@ int main() {
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[0]);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesSameTextureBlock), indicesSameTextureBlock, GL_DYNAMIC_DRAW);
 
-	chunk = new Chunk(0.0f, 10.0f, 0.0f);
-	worker1chunk = new Chunk(0.0f, 10.0f, 0.0f);
 
-	meshes = new Mesh[meshesAmount];
 	setSpawn(0, 0);
 
 	/*
@@ -705,11 +679,9 @@ int main() {
 	};
 
 	float change = 4.1f;
-	short threadTurn = 0;
-	chunkCoords chunksOrderSaver;
 
 	Frustum frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 1000.f);
-
+	
 	while (!glfwWindowShouldClose(window)) {
 
 		{
@@ -766,30 +738,34 @@ int main() {
 		glStencilMask(0xFF);
 		glStencilFunc(GL_ALWAYS, 0, 0xFF);
 
-		if (debug.showChunkBorders) {
-			glDisable(GL_CULL_FACE);
-			glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);\
-				debugShader.use();
-			debugShader.setMat4("pv", projection * view);
-			glBindVertexArray(debugVAO);
 
-			for (unsigned int i = 0; i < meshesAmount; i++) {
-				//if(sqrt((meshes[i].X - camera.Position.x) * (meshes[i].X - camera.Position.x) + (meshes[i].Y - camera.Position.y) * (meshes[i].Y - camera.Position.y) + (meshes[i].Z - camera.Position.z) * (meshes[i].Z - camera.Position.z)) < 45){
-				model = glm::mat4(1.0f);
-				model = glm::translate(model, glm::vec3(meshes[i].X, meshes[i].Y, meshes[i].Z));
-				if (meshes[i].length == 0) {
-					debugShader.setBool("skipped", true);
+
+			if (debug.showChunkBorders) {
+				glDisable(GL_CULL_FACE);
+				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				debugShader.use();
+				debugShader.setMat4("pv", projection * view);
+				glBindVertexArray(debugVAO);
+				size_t numChunks = chunks.size();
+				for (size_t i = 0; i < numChunks; i++) {
+					if (clearingChunks.load()) continue;
+					std::shared_ptr<Chunk> chunk = chunks.get(i);
+					if(chunk){
+						std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
+						model = glm::mat4(1.0f);
+						model = glm::translate(model, glm::vec3(chunk->X, chunk->Y, chunk->Z));
+						if(chunk->solid || chunk->empty){
+							debugShader.setBool("skipped", true);
+						}else{
+							debugShader.setBool("skipped", false);
+						}
+						debugShader.setMat4("model", model);
+						glDrawArrays(GL_TRIANGLES, 0, 36);
+					}
 				}
-				else {
-					debugShader.setBool("skipped", false);
-				}
-				debugShader.setMat4("model", model);
-				glDrawArrays(GL_TRIANGLES, 0, 36);
-				//}
+				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+					glEnable(GL_CULL_FACE);
 			}
-			glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);\
-				glEnable(GL_CULL_FACE);
-		}
 
 		shaderProgramBlocks.use();
 		shaderProgramBlocks.setMat4("pv", projection * view);
@@ -839,15 +815,23 @@ int main() {
 
 		if (held(BUTTON_B)) setSpawn(camera.Position.x, camera.Position.z);
 
-		for (unsigned int i = 0; i < realMeshes.size(); i++) {
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(meshes[realMeshes[i]].X, meshes[realMeshes[i]].Y, meshes[realMeshes[i]].Z));
-			glBindVertexArray(meshes[realMeshes[i]].VAO);
-			shaderProgramBlocks.setFloat("LODstep", float(meshes[realMeshes[i]].distanceI));
-			shaderProgramBlocks.setMat4("model", model);
-			shaderProgramBlocks.setFloat("material.shininess", 32.f);
-			glDrawArrays(GL_TRIANGLES, 0, meshes[realMeshes[i]].length);
-		}
+			{
+	    		size_t numMeshes = meshes.size();
+	    		for (size_t i = 0; i < numMeshes; i++) {
+					if (clearingChunks.load()) continue;
+					std::shared_ptr<Mesh> mesh = meshes.get(i);
+					if (mesh && mesh->VAO != 0) {
+						model = glm::mat4(1.0f);
+						model = glm::translate(model, glm::vec3(mesh->X, mesh->Y, mesh->Z));
+						glBindVertexArray(mesh->VAO);
+						shaderProgramBlocks.setFloat("LODstep", float(mesh->distanceI));
+						shaderProgramBlocks.setMat4("model", model);
+						shaderProgramBlocks.setFloat("material.shininess", 32.f);
+						glDrawArrays(GL_TRIANGLES, 0, mesh->vertices.size());
+					}
+					mesh.reset();
+	    		}
+			}
 
 		/*frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 1000.f);
 		for (unsigned int i = 0; i < realMeshes.size(); i++) {
@@ -1050,40 +1034,38 @@ int main() {
 
 		if(pressed(BUTTON_F)) bytesFromChunks = sizeOf(ramChunksStrings, ramChunksStrings.size());
 
-		if (pressed(BUTTON_8) && generate == false) {
+		if (pressed(MOUSE_LEFT) && generate.load() == false) {
 			bytesFromMeshes = 0;
 			unsigned int count = 0;
-			meshesAmount = 0;
 			totalChunks = 0;
 			generatePos = newPos;
-			threadTurn = 0;
-			neededThreadGeneratedChunks = 0;
 			if (extraThreads == 1) {
-				neededChunks.clear();
 			}
 
 			totalChunks = sliderTester1;
 
 			completedChunks = 0;
-			createAllMeshes = false;
-			makeChunksOrder = true;
 			worker1Finished = false;
+			makeChunksOrder = true;
 		}
 
 		{
 			std::unique_lock<std::mutex> lk(realMeshesQueueMutex);
-			// process up to N items per frame
 			int processed = 0;
-			while (!realMeshesQueue.empty() && processed < 500) {
-				unsigned int idx = realMeshesQueue.front();
+			while (!realMeshesQueue.empty() && processed < 250) {
+				unsigned int index = realMeshesQueue.front();
 				realMeshesQueue.pop();
 				lk.unlock();
 
-				// Now safely operate on meshes[idx] on the GL/main thread
-				meshes[idx].updateBuffers();
-				realMeshes.push_back(idx);
-
+				std::shared_ptr<Mesh> mesh = meshes.get(index);
+				if (mesh) {
+					std::lock_guard<std::mutex> meshLock(mesh->meshMtx);
+					if (mesh->VAO == 0) mesh->init();
+					mesh->updateBuffers();
+				}
+				mesh.reset();
 				lk.lock();
+
 				processed++;
 			}
 		}
@@ -1096,8 +1078,12 @@ int main() {
 		ImGui::SliderFloat("value", &change, -100.0f, 100.0f, "%.3f", 0);
 		ImGui::Text("FPS: = %i", debug.FPS);
 		ImGui::Text("X: = %f, Y: %f, Z: %f", camera.Position.x, camera.Position.y, camera.Position.z);
-		ImGui::Text("Memory from meshes, bytes: = %.f, KB: %.f, MB: %.f", bytesFromMeshes, bytesFromMeshes / 1000, bytesFromMeshes / 1000000);
-		ImGui::Text("Memory from chunks, bytes: = %i, KB: %i, MB: %i", bytesFromChunks, bytesFromChunks / 1000, bytesFromChunks / 1000000);
+		get_free_ram();
+		get_used_ram();
+		ImGui::Text("Memory used in MB: %llu, GB: %llu", (unsigned long long)rss.load(), (unsigned long long)(rss.load() / 1024));
+		ImGui::Text("free RAM in MB: %llu, GB: %llu", (unsigned long long)freeRam.load(), (unsigned long long)(freeRam.load()/1024));
+		ImGui::Text("total RAM in MB: %llu, GB: %llu", (unsigned long long)totalRam, (unsigned long long)(totalRam/1024));
+
 		ImGui::SliderFloat("Render Distance", &sliderTester1, 1, 100, "%.f", 0);
 
 		ImGui::End();
@@ -1114,18 +1100,21 @@ int main() {
 	joinableThreads[0] = false;
 	// Wake up all possible waits in worker thread
 	SMqueueCV.notify_all();
-	meshesAllocCV.notify_all();
 	realMeshesQueueCV.notify_all();
 	worker1.join();
 	if(chunkFile.is_open()) chunkFile.close();
-	delete chunk;
-	chunk = nullptr;
-	delete worker1chunk;
-	worker1chunk = nullptr;
-	delete[] meshes;
-	meshes = nullptr;
+	chunks.clear();
+	meshes.clear();
 	glDeleteVertexArrays(1, &foliageVAO);
 	glDeleteBuffers(1, &foliageVBO);
+
+	// Clean up framebuffers before destroying OpenGL context
+	horizontalBlurBuffer.cleanup();
+	verticalBlurBuffer.cleanup();
+	plainTerrainBuffer.cleanup();
+	darkHorizontalBlurBuffer.cleanup();
+	darkVerticalBlurBuffer.cleanup();
+
 	shaderProgramBlocks.Delete();
 	foliageShader.Delete();
 	text1Shader.Delete();
@@ -1148,8 +1137,8 @@ unsigned int sizeOf(T container, unsigned int length){
 	return total;
 }
 
-void framebuffer_size_callback(GLFWwindow* window, int width, int height)
-{
+void framebuffer_size_callback(GLFWwindow* window, int width, int height){
+	if (width == 0 || height == 0) return;
 	window_width = width;
 	window_height = height;
 	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 1000.0f);
@@ -1257,6 +1246,12 @@ input.buttons[b].is_down = bool(action);\
 		process_button(BUTTON_Y, 89);
 		process_button(BUTTON_Z, 90);
 		process_button(BUTTON_LEFT_CTRL, 341);
+		process_button(BUTTON_LEFT, 263);
+		process_button(BUTTON_RIGHT, 262);
+		process_button(BUTTON_UP, 265);
+		process_button(BUTTON_DOWN, 264);
+		process_button(BUTTON_MINUS, 45);
+		process_button(BUTTON_PLUS, 61);
 	default:
 		break;
 	}
@@ -1306,24 +1301,68 @@ void chunker1() {
 
 	}
 	while (true) {
-		if (!worker1Finished) {
-			if (makeChunksOrder) {
+		if (!worker1Finished.load()) {
+			if (makeChunksOrder.load()) {
 				timeBenchmark(0);
 				generate = true;
+
+				clearingChunks = true;
+				chunks.clear();
+				size_t numMeshes = meshes.size();
+				for (size_t i = 0; i < numMeshes; i++) {
+					std::shared_ptr<Mesh> mesh = meshes.get(i);
+					if (mesh) mesh->clearAndShrink();
+					mesh.reset();
+				}
+				meshes.clear();
+				chunks.shrink_to_fit();
+				meshes.shrink_to_fit();
+				malloc_trim(0);
+				clearingChunks = false;
 
 				for (int y = 0; y < std::clamp(totalChunks, 0, 15); y++) {
 					for (int z = 0; z < totalChunks; z++) {
 						for (int x = 0; x < totalChunks; x++) {
 							if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= totalChunks) {
 								if (joinableThreads[0] == false) break;
-								chunkCoords threadChunk{};
-								threadChunk.x = generatePos.x + x * 10.0f;
-								threadChunk.y = generatePos.y + (y - 1) * 10.0f;
-								threadChunk.z = generatePos.z + z * 10.0f;
-								threadChunk.index = completedChunks;
-								neededChunks.push_back(threadChunk);
-								completedChunks++;
-								meshesAmount++;
+								float chunkX = generatePos.x + x * 10.0f;
+								float chunkY = generatePos.y + (y - 1) * 10.0f;
+								float chunkZ = generatePos.z + z * 10.0f;
+
+								auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
+								chunks.push_back(newChunk);
+								
+								if(!newChunk->empty && !newChunk->solid){
+									auto newMesh = std::make_shared<Mesh>();
+									newMesh->chunksIndex = chunks.size() - 1;
+									meshes.push_back(newMesh);
+									newMesh->fillChunk();
+									{
+										std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
+										realMeshesQueue.push(meshes.size() - 1);
+									}
+									realMeshesQueueCV.notify_one();
+									completedChunks++;
+									newMesh.reset();
+								}
+								newChunk.reset();
+
+								get_free_ram();
+								if(freeRam < 200){ //EMERGENCY ACTION!!! RAM APPROACHING SYSTEM CRASH PROTECTION
+									std::cerr << "\n\033[31mRAM APPROACHING 100%, EMERGENCY CLEANUP STARTED\n";
+									get_used_ram();
+									size_t minEscape = 0;
+									rss.load() < 500 ? minEscape = rss.load() : minEscape = 500;
+									while(freeRam < minEscape){
+										chunks.remove(0);
+										malloc_trim(0);
+										get_free_ram();
+									}
+									chunks.shrink_to_fit();
+									malloc_trim(0);
+									std::cerr << "\033[33mEmergency cleanup done\n\033[0m";
+								}
+								
 								x *= -1;
 								if (x < 0) x--;
 							}
@@ -1336,63 +1375,11 @@ void chunker1() {
 				}
 
 				makeChunksOrder = false;
-				neededThreadGeneratedChunks = meshesAmount;
-
-                // Request main-thread allocation and wait for it to finish
-                awaitingMeshAlloc.store(true); // worker will wait until main clears this
-                auto allocTask = []() {
-                    // Run on main thread
-                    delete[] meshes;
-                    meshes = new Mesh[meshesAmount];
-                    // signal worker that allocation is done
-                    awaitingMeshAlloc.store(false);
-                    meshesAllocCV.notify_one();
-                };
-
-                {
-                    std::lock_guard<std::mutex> lock(SMqueueMutex);
-                    startMeshesTaskQueue.push(allocTask);
-                }
-                SMqueueCV.notify_one();
-
-                // Wait for main thread to finish allocation (worker blocks here)
-                {
-                    std::unique_lock<std::mutex> lk(meshesAllocMutex);
-                    meshesAllocCV.wait(lk, [] { return !awaitingMeshAlloc.load(); });
-                }
-
-				// Reset runtime structures after allocation
-				realMeshes.clear();
-				realMeshesQueue = std::queue<unsigned int>();
 				totalChunksGenerated = 0;
-				timeBenchmark(1);
-			}
-			else {
-				timeBenchmark(0);
-				unsigned int index = 0;
-				while (index < meshesAmount) {
-					worker1chunk->create(neededChunks[index].x, neededChunks[index].y, neededChunks[index].z);
-					meshes[neededChunks[index].index].fillChunk(*worker1chunk);
-					if (meshes[neededChunks[index].index].length > 0) {
-						{
-							std::lock_guard<std::mutex> lk(realMeshesQueueMutex);
-							realMeshesQueue.push(neededChunks[index].index);
-						}
-						realMeshesQueueCV.notify_one();
-					}
-					index++;
-					static int lastPercent = -1;
-					int percent = int((float(totalChunksGenerated) / neededThreadGeneratedChunks) * 100);
-					if (percent != lastPercent) {
-						std::cout << percent << "%\n";
-						lastPercent = percent;
-					}
-					if (joinableThreads[0] == false) break;
-				}
 				worker1Finished = true;
 				generate = false;
-				neededChunks.clear();
 				timeBenchmark(1);
+				malloc_trim(0);
 			}
 
 		}
@@ -1405,12 +1392,83 @@ void setSpawn(float x, float z) {
 	x = round(int(x) / 10) * 10.0f;
 	z = round(int(z) / 10) * 10.0f;
 	std::vector<float> meshHeights;
-	if (meshesAmount > 0) {
-		for (int i = 0; i < meshesAmount; i++) {
-			if (meshes[i].X == x && meshes[i].Z == z && meshes[i].length > 0) meshHeights.push_back(meshes[i].Y);
+	size_t numChunks = chunks.size();
+	if (numChunks > 0) {
+		for (size_t i = 0; i < numChunks; i++) {
+			std::shared_ptr<Chunk> chunk = chunks.get(i);
+			std::shared_ptr<Mesh> mesh = meshes.get(i);
+			if (chunk && mesh) {
+				std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
+				std::lock_guard<std::mutex> meshLock(mesh->meshMtx);
+				if (chunk->X == x && chunk->Z == z && mesh->vertices.size() > 0) meshHeights.push_back(chunk->Y);
+			}
+			mesh.reset();
 		}
-		auto autoMax = std::max_element(meshHeights.begin(), meshHeights.end());
-		int max = *autoMax;
-		camera.Position.y = chunk->calcNoiseAbsolute(camera.Position.x, camera.Position.z) + 15;
+		if (!meshHeights.empty()) {
+			auto autoMax = std::max_element(meshHeights.begin(), meshHeights.end());
+			int max = *autoMax;
+		}
+		Chunk temp;
+		camera.Position.y = temp.calcNoiseAbsolute(camera.Position.x, camera.Position.z) + 15;
+	}
+}
+
+//in mb
+void get_free_ram(){
+	struct sysinfo si;
+	if (sysinfo(&si) == 0) freeRam = (si.freeram * si.mem_unit) / (1024 * 1024);
+}
+
+//in mb
+void get_used_ram() {
+    std::ifstream stat_stream("/proc/self/statm", std::ios_base::in);
+    if (!stat_stream) return;
+
+    size_t total_pages, resident_pages;
+    if (stat_stream >> total_pages >> resident_pages) {
+        long page_size = sysconf(_SC_PAGESIZE);
+        size_t current_rss_mb = (resident_pages * page_size) / (1024 * 1024);
+        
+        rss.store(current_rss_mb);
+    }
+}
+
+void window_focus_callback(GLFWwindow* window, int focused) {
+	for (int i = 0; i < BUTTON_COUNT; i++) {
+        input.buttons[i].is_down = false;
+        input.buttons[i].is_changed = false;
+    }
+	bool leftButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_LEFT) == GLFW_PRESS;
+    bool rightButtonPressed = glfwGetMouseButton(window, GLFW_MOUSE_BUTTON_RIGHT) == GLFW_PRESS;
+    input.buttons[MOUSE_LEFT].is_down = leftButtonPressed;
+    input.buttons[MOUSE_RIGHT].is_down = rightButtonPressed;
+    if (focused) {
+		glfwMakeContextCurrent(window);
+        double xpos, ypos;
+        glfwGetCursorPos(window, &xpos, &ypos);
+        lastX = static_cast<float>(xpos); 
+        lastY = static_cast<float>(ypos);
+        firstMouse = false;
+    }else{
+		firstMouse = true;
+	}
+}
+
+void mouse_button_callback(GLFWwindow* window, int button, int action, int mods){
+
+#define process_button(b, keyCode)\
+case keyCode: {\
+input.buttons[b].is_changed = (bool(action) != input.buttons[b].is_down);\
+input.buttons[b].is_down = bool(action);\
+} break;\
+
+	switch (button){
+		process_button(MOUSE_LEFT, 0);
+		process_button(MOUSE_RIGHT, 1);
+		process_button(MOUSE_SCROLL_WHEEL, 2);
+		process_button(MOUSE_LEFT_BACK, 3);
+		process_button(MOUSE_LEFT_FRONT, 4);
+	default:
+		break;
 	}
 }

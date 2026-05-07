@@ -1,10 +1,12 @@
-struct verts {
-	unsigned int data[36];
-};
+#include <map>
+#include "tileHandling.h"
+#include <glm/glm.hpp>
+#include <glm/gtc/matrix_transform.hpp>
+#include <iostream>
 
 std::map<short, verts> naturalTiles;
 
-static void loadTiles() {
+void loadTiles() {
 	naturalTiles.clear();
 	for (unsigned int i = 0; i < (sizeof(tileVertices) / sizeof(tileVertices[0])) / (36.f); i++) {
 		verts vert;
@@ -17,7 +19,7 @@ static void loadTiles() {
 	}
 }
 
-static void DisplayData(short key, bool binary) {
+void DisplayData(short key, bool binary) {
 	if (binary) {
 		for (unsigned int i = 0; i < 36; i++) {
 			std::cout << std::bitset<32>(naturalTiles[key].data[i]) << '\n';

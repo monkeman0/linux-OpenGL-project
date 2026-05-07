@@ -1,0 +1,26 @@
+{
+    "configurations": [
+        {
+            "cStandard": "c17",
+            "compilerPath": "/usr/bin/gcc",
+            "cppStandard": "c++17",
+            "defines": [],
+            "includePath": [
+                "${workspaceFolder}/**",
+                "${workspaceFolder}/resources/libraries/glm",
+                "${workspaceFolder}/resources/libraries/imgui",
+                "${workspaceFolder}/resources/libraries/imgui/backends",
+                "${workspaceFolder}/resources/headers",
+                "${workspaceFolder}/resources/data",
+                "${workspaceFolder}/resources/shaders",
+                "${workspaceFolder}/resources/fonts",
+                "${workspaceFolder}/resources/textures",
+                "${workspaceFolder}/src",
+                "/usr/include"
+            ],
+            "intelliSenseMode": "linux-gcc-x64",
+            "name": "Linux"
+        }
+    ],
+    "version": 4
+}
