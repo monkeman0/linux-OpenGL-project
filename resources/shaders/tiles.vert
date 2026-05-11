@@ -13,49 +13,49 @@ vec3 toReturn = vec3(0.0f, 0.0f, 0.0f);
 if (returnType == 0) {
 	uint index = data >> 16 & 65535u;
 	uint corner = data & 7u;
-	float y = float(index / (40u * 40u)) * (0.25f) - 5.0f + (0.125f * LODstep);
-	float z = float((index / 40u) % 40u) * (0.25f) - 5.0f + (0.125f * LODstep);
-	float x = float(index % 40u) * (0.25f) - 5.0f + (0.125f * LODstep);
+	float y = float(index / (40u * 40u)) + (0.5f * LODstep);
+	float z = float((index / 40u) % 40u) + (0.5f * LODstep);
+	float x = float(index % 40u) + (0.5f * LODstep);
 	switch (corner) {
 	case 0u:{
-		x -= 0.125f * LODstep;
-		y -= 0.125f * LODstep;
-		z -= 0.125f * LODstep;
+		x -= 0.5f * LODstep;
+		y -= 0.5f * LODstep;
+		z -= 0.5f * LODstep;
 	}break;
 	case 1u: {
-		x += 0.125f * LODstep;
-		y -= 0.125f * LODstep;
-		z -= 0.125f * LODstep;
+		x += 0.5f * LODstep;
+		y -= 0.5f * LODstep;
+		z -= 0.5f * LODstep;
 	}break;
 	case 2u: {
-		x += 0.125f * LODstep;
-		y -= 0.125f * LODstep;
-		z += 0.125f * LODstep;
+		x += 0.5f * LODstep;
+		y -= 0.5f * LODstep;
+		z += 0.5f * LODstep;
 	}break;
 	case 3u: {
-		x -= 0.125f * LODstep;
-		y -= 0.125f * LODstep;
-		z += 0.125f * LODstep;
+		x -= 0.5f * LODstep;
+		y -= 0.5f * LODstep;
+		z += 0.5f * LODstep;
 	}break;
 	case 4u: {
-		x -= 0.125f * LODstep;
-		y += 0.125f * LODstep;
-		z -= 0.125f * LODstep;
+		x -= 0.5f * LODstep;
+		y += 0.5f * LODstep;
+		z -= 0.5f * LODstep;
 	}break;
 	case 5u: {
-		x += 0.125f * LODstep;
-		y += 0.125f * LODstep;
-		z -= 0.125f * LODstep;
+		x += 0.5f * LODstep;
+		y += 0.5f * LODstep;
+		z -= 0.5f * LODstep;
 	}break;
 	case 6u: {
-		x += 0.125f * LODstep;
-		y += 0.125f * LODstep;
-		z += 0.125f * LODstep;
+		x += 0.5f * LODstep;
+		y += 0.5f * LODstep;
+		z += 0.5f * LODstep;
 	}break;
 	case 7u: {
-		x -= 0.125f * LODstep;
-		y += 0.125f * LODstep;
-		z += 0.125f * LODstep;
+		x -= 0.5f * LODstep;
+		y += 0.5f * LODstep;
+		z += 0.5f * LODstep;
 	}break;
 	default: break;
 	}

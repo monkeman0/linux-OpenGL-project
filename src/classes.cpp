@@ -5,8 +5,6 @@
 #include <iostream>
 
 // Global variable definitions
-int totalChunksGenerated = 0;
-float bytesFromMeshes = 0;
 Input input;
 Debug debug;
 short distanceIncriment[] = {
@@ -175,33 +173,26 @@ void Chunk::initialNoiseSet() {
 }
 
 float Chunk::calcNoise(float x, float z) {
-    z = (z * voxelWidths + Z);
-    x = (x * voxelWidths + X);    
-    float currentNoise = this->noise.GetNoise(x, z);
-    FastNoiseLite largeNoise;
-    largeNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-    largeNoise.SetSeed(0);
-    largeNoise.SetFrequency(0.002f);
-    float plusNoise = largeNoise.GetNoise(x, z);
+    float worldX = x + this->X;
+    float worldZ = z + this->Z;     
+    float currentNoise = this->noise.GetNoise(worldX, worldZ);
+    float plusNoise = largeNoise.GetNoise(worldX, worldZ);
     plusNoise *= 200.0f;
     currentNoise *= 10.0f;
     currentNoise = currentNoise * currentNoise * currentNoise;
-    currentNoise -= (sin(x) * cos(z)) * (currentNoise / 70);
+    currentNoise -= (std::sin(worldX) * std::cos(worldZ)) * (currentNoise / 70);
     currentNoise += plusNoise;
     return currentNoise;
 }
 
 float Chunk::calcNoiseAbsolute(float x, float z) {
-    z = (z * voxelWidths);
-    x = (x * voxelWidths);
     float currentNoise = noise.GetNoise(x, z);
     float plusNoise = largeNoise.GetNoise(x, z);
-    plusNoise *= 300.0f;
-    currentNoise *= 12.0f;
-    currentNoise = currentNoise * currentNoise;
-    currentNoise -= (sin(x) * cos(z)) * (currentNoise / 70);
+    plusNoise *= 200.0f;
+    currentNoise *= 10.0f;
+    currentNoise = currentNoise * currentNoise * currentNoise;
+    currentNoise -= (std::sin(x) * std::cos(z)) * (currentNoise / 70);
     currentNoise += plusNoise;
-    currentNoise = abs(currentNoise);
     return currentNoise;
 }
 
@@ -219,85 +210,20 @@ void Chunk::create(float X, float Y, float Z) {
         else {
             distanceI = 1;
         }
-        short heights[40][40];
-        for (int z = 0; z < widths; z+=distanceI) {
-        for (int x = 0; x < widths; x+=distanceI) {
-            float currentNoise = calcNoise(x + distanceI / 2, z + distanceI / 2);
-            heights[x][z] = -1;
-            for (int y = 0; y < widths; y+=distanceI) {
-                
-                unsigned short blockType = (currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f);
-                this->objects[x + this->widths * (z + this->widths * y)] = blockType;
-                if(blockType == 1 && (currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) <= -1.0f)) heights[x][z] = y;
-                if(this->empty || this->solid){
-                    if (blockType != 0){
-                        this->empty = false;
-                        if(this->solid == true){
-                            if(distanceI == 40){
-                                if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                float tempNoise = calcNoise(x + distanceI / 2 - distanceI, z + distanceI / 2);
-                                if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                tempNoise = calcNoise(x + distanceI / 2 + distanceI, z + distanceI / 2);
-                                if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 - distanceI);
-                                if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                tempNoise = calcNoise(x + distanceI / 2, z + distanceI / 2 + distanceI);
-                                if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                            }else{
-                                if(y == 0){
-                                    if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y - 1 - distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                                if(y == widths - distanceI){
-                                    if(!(currentNoise - Y - (widths * voxelWidths) + ((widths - (y + distanceI)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                                if(x == 0){
-                                    float tempNoise = calcNoise(x - distanceI, z);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                                if(x == widths - distanceI){
-                                    float tempNoise = calcNoise(x + distanceI, z);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                                if(z == 0){
-                                    float tempNoise = calcNoise(x, z - distanceI);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                                if(z == widths - distanceI){
-                                    float tempNoise = calcNoise(x, z + distanceI);
-                                    if(!(tempNoise - Y - (widths * voxelWidths) + ((widths - (y - 1)) * voxelWidths) + floor(widths * voxelWidths) > -1.0f)) this->solid = false;
-                                }
-                            }
-                        }
-                    }else{
-                        this->solid = false;
-                    }
-                }
+        
+        for (int z = 0; z < widths; z++) {
+            for (int x = 0; x < widths; x++) {
+                float currentNoise = calcNoise(x, z);
+                int surfaceY = std::max(-1, std::min(int(widths), (int)std::floor(currentNoise - Y)));
+                heightMap[x][z] = (char)surfaceY;
+                if (surfaceY >= 0) empty = false;
+                if (surfaceY < widths) solid = false;
             }
         }
-    }
-    for (int z = 0; z < widths; z+=distanceI) {
-        for (int x = 0; x < widths; x+=distanceI) {
-            if(heights[x][z] != -1){
-                this->objects[x + this->widths * (z + this->widths * heights[x][z])] = 2;
-                if(heights[x][z] - 1 >= 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 1))] = 3;
-                if(heights[x][z] - 2 >= 0 && rand() % 3 > 0) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 2))] = 3;
-                if(heights[x][z] - 3 >= 0 && rand() % 3 > 1) this->objects[x + this->widths * (z + this->widths * (heights[x][z] - 3))] = 3;
-            }
-        }
-    }
-}
-
-bool Chunk::closeBlock(int offsetX, float offsetY, int offsetZ, short distanceI2) {
-    // Sample at neighbor's LOD resolution to get accurate results
-    float sampleX = offsetX + distanceI2 / 2.0f;
-    float sampleZ = offsetZ + distanceI2 / 2.0f;
-    float currentNoise = calcNoise(sampleX, sampleZ);
-    return (currentNoise - Y - (widths * voxelWidths) + ((widths - (offsetY - 1)) * voxelWidths) + floor(widths * voxelWidths)) > -1.0f;
 }
 
 short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ, float xoffset, float yoffset, float zoffset) {
-    short neighborDistance = trunc(sqrt(((chunkX + xoffset) - generatePos.x) * ((chunkX + xoffset) - generatePos.x) + ((chunkY + yoffset) - generatePos.y) * ((chunkY + yoffset) - generatePos.y) + ((chunkZ + zoffset) - generatePos.z) * ((chunkZ + zoffset) - generatePos.z))) / 30;
+    short neighborDistance = trunc(sqrt(((chunkX + xoffset) - generatePos.x) * ((chunkX + xoffset) - generatePos.x) + ((chunkY + yoffset) - generatePos.y) * ((chunkY + yoffset) - generatePos.y) + ((chunkZ + zoffset) - generatePos.z) * ((chunkZ + zoffset) - generatePos.z))) / 100;
     if (neighborDistance > 15) neighborDistance = 15;
     return distanceIncriment[neighborDistance];
 }
@@ -305,7 +231,7 @@ short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ, float x
 Chunk::~Chunk(){}
 
 void Chunk::writeChunk(){
-    std::fstream chunkFile;
+    /*std::fstream chunkFile;
     chunkFile.open("../resources/data/storedChunks.wrld", std::ios::app);
     if (chunkFile.is_open()) {
         std::string line = "";
@@ -327,11 +253,11 @@ void Chunk::writeChunk(){
         chunkFile << line << '\n';
         ramChunksStrings.push_back(line);
         chunkFile.close();
-    }
+    }*/
 }
 
 void Chunk::readChunkString(unsigned int lineNumber) {
-    unsigned int place = 0;
+    /*unsigned int place = 0;
     //test...
     std::string line = ramChunksStrings[lineNumber];
     for (int i = 0; i < 3; i++) {
@@ -365,7 +291,7 @@ void Chunk::readChunkString(unsigned int lineNumber) {
                 break;
             }
         }
-    }
+    }*/
 }
 
 unsigned int Chunk::search(float X, float Y, float Z) {
@@ -398,6 +324,12 @@ unsigned int Chunk::search(float X, float Y, float Z) {
         }
     }
     return 0;
+}
+
+void Chunk::clearAndShrink() {
+	/*std::lock_guard<std::mutex> lock(chunkMtx);
+	objects.clear();
+	objects.shrink_to_fit();*/
 }
 
 Mesh::Mesh(){}
@@ -443,199 +375,144 @@ void Mesh::listItems(bool which) {
     }
 }
 
-void Mesh::fillChunk() {
+void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
     this->vertices.clear();
     std::shared_ptr<Chunk> chunkPtr = chunks.get(chunksIndex);
     if (!chunkPtr) return;
+    if(chunksSearch.find(glm::vec3(chunkX - 40, chunkY, chunkZ)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX - 40, chunkY, chunkZ);
+		chunks.push_back(newChunk);
+		chunksSearch[glm::vec3(chunkX - 40, chunkY, chunkZ)] = chunks.size() - 1;
+        chunksLeftIndex = chunks.size() - 1;
+	}else{
+        chunksLeftIndex = chunksSearch.at(glm::vec3(chunkX - 40, chunkY, chunkZ));
+    }
+    std::shared_ptr<Chunk> chunkLeftPtr = chunks.get(chunksLeftIndex);
+    if (!chunkLeftPtr) return;
+
+    if(chunksSearch.find(glm::vec3(chunkX + 40, chunkY, chunkZ)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX + 40, chunkY, chunkZ);
+		chunks.push_back(newChunk);
+		chunksSearch[glm::vec3(chunkX + 40, chunkY, chunkZ)] = chunks.size() - 1;
+        chunksRightIndex = chunks.size() - 1;
+	}else{
+        chunksRightIndex = chunksSearch.at(glm::vec3(chunkX + 40, chunkY, chunkZ));
+    }
+    std::shared_ptr<Chunk> chunkRightPtr = chunks.get(chunksRightIndex);
+    if (!chunkRightPtr) return;
+
+    if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ - 40)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ - 40);
+		chunks.push_back(newChunk);
+		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ - 40)] = chunks.size() - 1;
+        chunksBackIndex = chunks.size() - 1;
+	}else{
+        chunksBackIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ - 40));
+    }
+    std::shared_ptr<Chunk> chunkBackPtr = chunks.get(chunksBackIndex);
+    if (!chunkBackPtr) return;
+
+     if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ + 40)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ + 40);
+		chunks.push_back(newChunk);
+		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ + 40)] = chunks.size() - 1;
+        chunksFrontIndex = chunks.size() - 1;
+	}else{
+        chunksFrontIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ + 40));
+    }
+    std::shared_ptr<Chunk> chunkFrontPtr = chunks.get(chunksFrontIndex);
+    if (!chunkFrontPtr) return;
     
     std::lock_guard<std::mutex> chunkLock(chunkPtr->chunkMtx);
     Chunk& chunk = *chunkPtr;
+    std::lock_guard<std::mutex> chunkLock2(chunkLeftPtr->chunkMtx);
+    Chunk& leftChunk = *chunkLeftPtr;
+    std::lock_guard<std::mutex> chunkLock3(chunkRightPtr->chunkMtx);
+    Chunk& rightChunk = *chunkRightPtr;
+    std::lock_guard<std::mutex> chunkLock4(chunkBackPtr->chunkMtx);
+    Chunk& backChunk = *chunkBackPtr;
+    std::lock_guard<std::mutex> chunkLock5(chunkFrontPtr->chunkMtx);
+    Chunk& frontChunk = *chunkFrontPtr;
+
+    this->X = chunk.X;
+    this->Y = chunk.Y;
+    this->Z = chunk.Z;
     this->distanceI = chunk.distanceI;
-    short otherLODchunks[6] = { 0 };
-    otherLODchunks[0] = chunk.neighborDistanceI(chunk.X, chunk.Y, chunk.Z, 0, -10, 0);
-    otherLODchunks[1] = chunk.neighborDistanceI(chunk.X, chunk.Y, chunk.Z, 0, 10, 0);
-    otherLODchunks[2] = chunk.neighborDistanceI(chunk.X, chunk.Y, chunk.Z, -10, 0, 0);
-    otherLODchunks[3] = chunk.neighborDistanceI(chunk.X, chunk.Y, chunk.Z, 10, 0, 0);
-    otherLODchunks[4] = chunk.neighborDistanceI(chunk.X, chunk.Y, chunk.Z, 0, 0, -10);
-    otherLODchunks[5] = chunk.neighborDistanceI(chunk.X, chunk.Y, chunk.Z, 0, 0, 10);
     std::vector<unsigned int> verticesTemp;
-    for (int y = 0; y < chunk.widths; y += this->distanceI) {
-        for (int z = 0; z < chunk.widths; z += this->distanceI) {
-            for (int x = 0; x < chunk.widths; x += this->distanceI) {
-                if (chunk.objects[x + chunk.widths * (z + chunk.widths * y)] != 0) {
-                    short current = chunk.objects[x + chunk.widths * (z + chunk.widths * y)];
-                    // y-min (face 0)
-                    bool exposedFaces[6] = { false };
+    for (int z = 0; z < chunk.widths; z += this->distanceI) {
+        for (int x = 0; x < chunk.widths; x += this->distanceI) {
+            int y = (int)chunk.heightMap[x][z];
+            int yNegX = x - distanceI < 0 ? (int)leftChunk.heightMap[40 - distanceI][z] : (int)chunk.heightMap[x - distanceI][z];
+            int yPosX = x + distanceI > 39 ? (int)rightChunk.heightMap[x + distanceI - chunk.widths][z] : (int)chunk.heightMap[x + distanceI][z];
+            int yNegZ = z - distanceI < 0 ? (int)backChunk.heightMap[x][40 - distanceI] : (int)chunk.heightMap[x][z - distanceI];
+            int yPosZ = z + distanceI > 39 ? (int)frontChunk.heightMap[x][z + distanceI - chunk.widths] : (int)chunk.heightMap[x][z + distanceI];
+            if(y >= 0){
+            unsigned int current = 0;
 
 #define addVertices(exposed)\
-if(exposedFaces[exposed] == false){\
 for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
     unsigned int tempVertice = naturalTiles[current].data[i];\
     tempVertice |= static_cast<unsigned int>(x + chunk.widths * (z + chunk.widths * y)) << 16;\
     verticesTemp.push_back(tempVertice);\
 }\
-exposedFaces[exposed] = true;\
-}\
 
-                    if (debug.useLOD) {
-                        // y-min (face 0)
-                        if (y > 0) {
-                            if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y - distanceI))] == 0) addVertices(0);
-                        }
-                        else {
-                            bool exposed = false;
-                            int sampleStep = std::max(1, otherLODchunks[0] / 4);
-                            for (int xL = 0; xL < distanceI && !exposed; xL += sampleStep) {
-                                for (int zL = 0; zL < distanceI && !exposed; zL += sampleStep) {
-                                    if (chunk.closeBlock(x + xL, -distanceI, z + zL, otherLODchunks[0]) == 0) {
-                                        exposed = true;
-                                    }
-                                }
-                            }
-                            if (exposed) addVertices(0);
-                        }
-                        // y-max (face 1)
-                        if (y < chunk.widths - distanceI) {
-                            if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y + distanceI))] == 0) addVertices(1);
-                        }
-                        else {
-                            bool exposed = false;
-                            int sampleStep = std::max(1, otherLODchunks[1] / 4);
-                            for (int xL = 0; xL < distanceI && !exposed; xL += sampleStep) {
-                                for (int zL = 0; zL < distanceI && !exposed; zL += sampleStep) {
-                                    if (chunk.closeBlock(x + xL, y + distanceI, z + zL, otherLODchunks[1]) == 0) {
-                                        exposed = true;
-                                    }
-                                }
-                            }
-                            if (exposed) addVertices(1);
-                        }
-                        // x-min (face 2)
-                        if (x > 0) {
-                            if (chunk.objects[(x - distanceI) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(2);
-                        }
-                        else {
-                            bool exposed = false;
-                            int sampleStep = std::max(1, otherLODchunks[2] / 4);
-                            for (int yL = 1; yL < distanceI && !exposed; yL += sampleStep) {
-                                for (int zL = 1; zL < distanceI && !exposed; zL += sampleStep) {
-                                    if (chunk.closeBlock(-distanceI, y + yL, z + zL, otherLODchunks[2]) == 0) {
-                                        exposed = true;
-                                    }
-                                }
-                            }
-                            if (exposed) addVertices(2);
-                        }
-                        // x-max (face 3)
-                        if (x < chunk.widths - distanceI) {
-                            if (chunk.objects[(x + distanceI) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(3);
-                        }
-                        else {
-                            bool exposed = false;
-                            int sampleStep = std::max(1, otherLODchunks[3] / 4);
-                            for (int yL = 1; yL < distanceI && !exposed; yL += sampleStep) {
-                                for (int zL = 1; zL < distanceI && !exposed; zL += sampleStep) {
-                                    if (chunk.closeBlock(x + distanceI, y + yL, z + zL, otherLODchunks[3]) == 0) {
-                                        exposed = true;
-                                    }
-                                }
-                            }
-                            if (exposed) addVertices(3);
-                        }
-                        // z-min (face 4)
-                        if (z > 0) {
-                            if (chunk.objects[x + chunk.widths * ((z - distanceI) + chunk.widths * y)] == 0) addVertices(4);
-                        }
-                        else {
-                            bool exposed = false;
-                            int sampleStep = std::max(1, otherLODchunks[4] / 4);
-                            for (int yL = 1; yL < distanceI && !exposed; yL += sampleStep) {
-                                for (int xL = 1; xL < distanceI && !exposed; xL += sampleStep) {
-                                    if (chunk.closeBlock(x + xL, y + yL, -distanceI, otherLODchunks[4]) == 0) {
-                                        exposed = true;
-                                    }
-                                }
-                            }
-                            if (exposed) addVertices(4);
-                        }
-                        // z-max (face 5)
-                        if (z < chunk.widths - distanceI) {
-                            if (chunk.objects[x + chunk.widths * ((z + distanceI) + chunk.widths * y)] == 0) addVertices(5);
-                        }
-                        else {
-                            bool exposed = false;
-                            int sampleStep = std::max(1, otherLODchunks[5] / 4);
-                            for (int yL = 1; yL < distanceI && !exposed; yL += sampleStep) {
-                                for (int xL = 1; xL < distanceI && !exposed; xL += sampleStep) {
-                                    if (chunk.closeBlock(x + xL, y + yL, z + distanceI, otherLODchunks[5]) == 0) {
-                                        exposed = true;
-                                    }
-                                }
-                            }
-                            if (exposed) addVertices(5);
-                        }
-                    }
-                    else {
-                        //no LOD
-                        if (y > 0) {
-                            if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y - 1))] == 0) addVertices(0);
-                        }
-                        else {
-                            if (chunk.closeBlock(x, -1, z, 1) == 0) addVertices(0);
-                        }
-                        if (y < chunk.widths - 1) {
-                            if (chunk.objects[x + chunk.widths * (z + chunk.widths * (y + 1))] == 0) addVertices(1);
-                        }
-                        else {
-                            if (chunk.closeBlock(x, 40, z, 1) == 0) addVertices(1);
-                        }
-                        if (x > 0) {
-                            if (chunk.objects[(x - 1) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(2);
-                        }
-                        else {
-                            if (chunk.closeBlock(-1, y, z, 1) == 0) addVertices(2);
-                        }
-                        if (x < chunk.widths - 1) {
-                            if (chunk.objects[(x + 1) + chunk.widths * (z + chunk.widths * y)] == 0) addVertices(3);
-                        }
-                        else {
-                            if (chunk.closeBlock(40, y, z, 1) == 0) addVertices(3);
-                        }
-                        if (z > 0) {
-                            if (chunk.objects[x + chunk.widths * ((z - 1) + chunk.widths * y)] == 0) addVertices(4);
-                        }
-                        else {
-                            if (chunk.closeBlock(x, y, -1, 1) == 0) addVertices(4);
-                        }
-                        if (z < chunk.widths - 1) {
-                            if (chunk.objects[x + chunk.widths * ((z + 1) + chunk.widths * y)] == 0) addVertices(5);
-                        }
-                        else {
-                            if (chunk.closeBlock(x, y, 40, 1) == 0) addVertices(5);
-                        }
-                    }
+            // y-min (face 0)
+            // y-max (face 1)
+            
+            if(y != 40){
+                current = 2; //grass
+                addVertices(1);
+                if(y > yNegX) addVertices(2);
+                if(y > yPosX) addVertices(3);
+                if(y > yNegZ) addVertices(4);
+                if(y > yPosZ) addVertices(5);
+                y-=distanceI;
+                if(y < 0) continue;
+                current = 3; //dirt
+                if(y > yNegX) addVertices(2);
+                if(y > yPosX) addVertices(3);
+                if(y > yNegZ) addVertices(4);
+                if(y > yPosZ) addVertices(5);
+                y-=distanceI;
+                if(y < 0) continue;
+                current = 1; //stone
+                while(y >= 0){
+                    if(y > yNegX) addVertices(2);
+                    if(y > yPosX) addVertices(3);
+                    if(y > yNegZ) addVertices(4);
+                    if(y > yPosZ) addVertices(5);
+                    y-=distanceI;
                 }
-            }
+            }else{
+                y--;
+                int currentHeight = std::floor(chunk.calcNoise(x, z));
+                if(currentHeight - (Y + chunk.widths) == 0){
+                    current = 3; //dirt
+                    if(y > yNegX) addVertices(2);
+                    if(y > yPosX) addVertices(3);
+                    if(y > yNegZ) addVertices(4);
+                    if(y > yPosZ) addVertices(5);
+                    y-=distanceI;
+                }
+                current = 1; //stone
+                while(y >= 0){
+                    if(y > yNegX) addVertices(2);
+                    if(y > yPosX) addVertices(3);
+                    if(y > yNegZ) addVertices(4);
+                    if(y > yPosZ) addVertices(5);
+                    y-=distanceI;
+                }
+            }    
+            } //y >= 0
         }
     }
-
-    this->X = chunk.X;
-    this->Y = chunk.Y;
-    this->Z = chunk.Z;
     this->vertices = verticesTemp;
-    bytesFromMeshes += (vertices.size() * 4.f) + 34.f;
-    totalChunksGenerated++;
 }
+
 void Mesh::clearAndShrink() {
 	std::lock_guard<std::mutex> lock(meshMtx);
 	vertices.clear();
 	vertices.shrink_to_fit();
-}
-
-size_t Mesh::getMemSize(){
-    size_t total = 0;
-    for(const auto& t : vertices) total += sizeof(t);
-    return total + 35 + 24;
 }
 
 void frameBuffer::screenUpdate(int newWidth, int newHeight) {

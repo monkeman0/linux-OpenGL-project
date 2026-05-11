@@ -14,21 +14,21 @@ void main()
     vec3 pos = vec3(0.0f, 0.0f, 0.0f);
 
     switch(corner){
-	case 0: pos = vec3(-5.0f, -5.0f, 5.0f);
+	case 0: pos = vec3(0.0f, 0.0f, 40.0f);
 	break;
-	case 1: pos = vec3(5.0f, -5.0f, 5.0f);
+	case 1: pos = vec3(40.0f, 0.0f, 40.0f);
 	break;
-	case 2: pos = vec3(5.0f, -5.0f, -5.0f);
+	case 2: pos = vec3(40.0f, 0.0f, 0.0f);
 	break;
-	case 3: pos = vec3(-5.0f, -5.0f, -5.0f);
+	case 3: pos = vec3(0.0f, 0.0f, 0.0f);
 	break;
-	case 4: pos = vec3(-5.0f, 5.0f, 5.0f);
+	case 4: pos = vec3(0.0f, 40.0f, 40.0f);
 	break;
-	case 5: pos = vec3(5.0f, 5.0f, 5.0f);
+	case 5: pos = vec3(40.0f, 40.0f, 40.0f);
 	break;
-	case 6: pos = vec3(5.0f, 5.0f, -5.0f);
+	case 6: pos = vec3(40.0f, 40.0f, 0.0f);
 	break;
-	case 7: pos = vec3(-5.0f, 5.0f, -5.0f);
+	case 7: pos = vec3(0.0f, 40.0f, 0.0f);
 	break;
 	default: break;
 	}

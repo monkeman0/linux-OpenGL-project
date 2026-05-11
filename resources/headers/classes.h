@@ -13,14 +13,7 @@
 #include <map>
 #include <mutex>
 #include <memory>
-
-struct vec2Hash {
-	std::size_t operator()(const glm::vec2& v) const {
-		std::size_t h1 = std::hash<float>{}(v.x);
-		std::size_t h2 = std::hash<float>{}(v.y);
-		return h1 ^ (h2 << 1);
-	}
-};
+#include "chunksSearch.h"
 
 class Chunk;
 template <typename T>
@@ -80,6 +73,10 @@ public:
     unsigned int VAO = 0, VBO = 0;
     short distanceI = 1;
     unsigned int chunksIndex = 0;
+    unsigned int chunksLeftIndex = 0;
+    unsigned int chunksRightIndex = 0;
+    unsigned int chunksBackIndex = 0;
+    unsigned int chunksFrontIndex = 0;
     bool deleted = false;
     mutable std::mutex meshMtx;
 
@@ -90,9 +87,8 @@ public:
     void updateBuffers();
     void listItems(bool which);
     unsigned int size(bool type);
-    void fillChunk();
+    void fillChunk(float chunkX, float chunkY, float chunkZ);
 	void clearAndShrink();
-    size_t getMemSize();
 
 private:
 };
@@ -100,8 +96,7 @@ private:
 class Chunk {
 public:
     static const short widths = 40;
-    const float voxelWidths = 0.25f;
-    unsigned short objects[widths * widths * widths] = { 0 };
+    char heightMap[40][40];
     bool empty = true;
     bool solid = true;
     float X = 0;
@@ -118,8 +113,8 @@ public:
     float calcNoise(float x, float z);
     float calcNoiseAbsolute(float x, float z);
     void create(float X, float Y, float Z);
-    bool closeBlock(int offsetX, float offsetY, int offsetZ, short distanceI2);
     short neighborDistanceI(float chunkX, float chunkY, float chunkZ, float xoffset, float yoffset, float zoffset);
+    void clearAndShrink();
     ~Chunk();
 private:
 

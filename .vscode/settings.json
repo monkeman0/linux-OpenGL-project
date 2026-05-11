@@ -112,7 +112,8 @@
                 "settings": {
                     "foreground": "#3f45f5"
                 },
-            }
+            },
+            
         ]
     },
     "github.copilot.enable": {
@@ -128,6 +129,7 @@
     
     "files.watcherExclude": {
         "**/node_modules/**": true,
-        "**/dist/**": true
+        "**/dist/**": true,
+        "**/build": true
     }
 }

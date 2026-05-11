@@ -39,30 +39,21 @@ std::condition_variable SMqueueCV;
 std::mutex realMeshesQueueMutex;
 std::condition_variable realMeshesQueueCV;
 
-float sliderTester1 = 35;
+float sliderTester1 = 11;
 float sliderTester2 = 40;
 float sliderTester3 = 0.f;
 float t1, t2, t3, t4, t5 = 0.f;
 int startingWindow_width = 0;
 int startingWindow_height = 0;
 
-struct vec3Hash {
-	std::size_t operator()(const glm::vec3& v) const noexcept {
-		std::size_t h = std::hash<float>{}(v.x);
-		auto combine = [](std::size_t seed, std::size_t value) {
-			return seed ^ (value + 0x9e3779b9 + (seed << 6) + (seed >> 2));
-			};
-		h = combine(h, std::hash<float>{}(v.y));
-		h = combine(h, std::hash<float>{}(v.z));
-		return h;
-	}
-};
 
 unsigned int bytesFromChunks = 0;
 
 #include "tileHandling.h"
 #include "classes.h"
 #include "cameraClass.h"
+
+std::unordered_map<glm::vec3, unsigned int, vec3Hash> chunksSearch;
 
 double pi = 3.141592653589793;
 float deltaTime = 0.0f;
@@ -76,12 +67,12 @@ glm::mat4 projection;
 
 #define debugSpeeds()\
 if (debug.moveMode == '1') {\
-	debug.speed = 0.3f;\
+	debug.speed = 2.5f;\
 }\
 else if(debug.moveMode == '2'){\
-	debug.speed = 60.0f;\
+	debug.speed = 160.0f;\
 }else{\
-	debug.speed = 8.0f;\
+	debug.speed = 24.0f;\
 }\
 	camera.MovementSpeed = debug.speed;\
 
@@ -708,7 +699,7 @@ int main() {
 		lastTime = float(glfwGetTime());
 		glfwPollEvents();
 
-		glm::vec3 prevPos = glm::vec3(round(camera.Position.x / 10) * 10.0f, round(camera.Position.y / 10) * 10.0f, round(camera.Position.z / 10) * 10.0f);
+		glm::vec3 prevPos = glm::vec3(round(camera.Position.x / 40) * 40.0f, round(camera.Position.y / 40) * 40.0f, round(camera.Position.z / 40) * 40.0f);
 		//std::cout << "X: " << prevPos.x << " Y: " << prevPos.y << " Z: " << prevPos.z << '\n';
 
 		if (held(BUTTON_W))  camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -720,7 +711,7 @@ int main() {
 		camera.Roll *= (abs((atan(deltaTime * 10.0f) - 95.f) * 0.01f) * (abs(camera.Roll) > 0.05f));
 		camera.updateCameraVectors();
 
-		glm::vec3 newPos = glm::vec3(round(camera.Position.x / 10) * 10.0f, round(camera.Position.y / 10) * 10.0f, round(camera.Position.z / 10) * 10.0f);
+		glm::vec3 newPos = glm::vec3(round(camera.Position.x / 40) * 40.0f, round(camera.Position.y / 40) * 40.0f, round(camera.Position.z / 40) * 40.0f);
 
 		if (newPos != prevPos) {
 
@@ -750,7 +741,7 @@ int main() {
 				for (size_t i = 0; i < numChunks; i++) {
 					if (clearingChunks.load()) continue;
 					std::shared_ptr<Chunk> chunk = chunks.get(i);
-					if(chunk){
+					//if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
 						std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
 						model = glm::mat4(1.0f);
 						model = glm::translate(model, glm::vec3(chunk->X, chunk->Y, chunk->Z));
@@ -761,7 +752,7 @@ int main() {
 						}
 						debugShader.setMat4("model", model);
 						glDrawArrays(GL_TRIANGLES, 0, 36);
-					}
+					//}
 				}
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 					glEnable(GL_CULL_FACE);
@@ -1034,8 +1025,7 @@ int main() {
 
 		if(pressed(BUTTON_F)) bytesFromChunks = sizeOf(ramChunksStrings, ramChunksStrings.size());
 
-		if (pressed(MOUSE_LEFT) && generate.load() == false) {
-			bytesFromMeshes = 0;
+		if (pressed(BUTTON_8) && generate.load() == false) {
 			unsigned int count = 0;
 			totalChunks = 0;
 			generatePos = newPos;
@@ -1062,6 +1052,7 @@ int main() {
 					std::lock_guard<std::mutex> meshLock(mesh->meshMtx);
 					if (mesh->VAO == 0) mesh->init();
 					mesh->updateBuffers();
+					//most meshes don't make it here???
 				}
 				mesh.reset();
 				lk.lock();
@@ -1141,7 +1132,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 	if (width == 0 || height == 0) return;
 	window_width = width;
 	window_height = height;
-	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 1000.0f);
+	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 2000.0f);
 	horizontalBlurBuffer.screenUpdate(window_width, window_height);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glViewport(0, 0, width, height);
@@ -1320,32 +1311,39 @@ void chunker1() {
 				malloc_trim(0);
 				clearingChunks = false;
 
+				chunksSearch.clear();
+
 				for (int y = 0; y < std::clamp(totalChunks, 0, 15); y++) {
 					for (int z = 0; z < totalChunks; z++) {
 						for (int x = 0; x < totalChunks; x++) {
 							if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= totalChunks) {
 								if (joinableThreads[0] == false) break;
-								float chunkX = generatePos.x + x * 10.0f;
-								float chunkY = generatePos.y + (y - 1) * 10.0f;
-								float chunkZ = generatePos.z + z * 10.0f;
+								float chunkX = generatePos.x + x * 40.0f;
+								float chunkY = generatePos.y + (y - 1) * 40.0f;
+								float chunkZ = generatePos.z + z * 40.0f;
 
-								auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
-								chunks.push_back(newChunk);
-								
-								if(!newChunk->empty && !newChunk->solid){
+								if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ)) == chunksSearch.end()){
+									auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
+									chunks.push_back(newChunk);
+									chunksSearch[glm::vec3(chunkX, chunkY, chunkZ)] = chunks.size() - 1;
+								}
+
+								unsigned int chunkIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ));
+								std::shared_ptr<Chunk> chunkPtr = chunks.get(chunkIndex);
+								if(!chunkPtr->empty && !chunkPtr->solid){
 									auto newMesh = std::make_shared<Mesh>();
-									newMesh->chunksIndex = chunks.size() - 1;
+									newMesh->chunksIndex = chunkIndex;
 									meshes.push_back(newMesh);
-									newMesh->fillChunk();
+									unsigned int meshIndex = static_cast<unsigned int>(meshes.size() - 1);
+									newMesh->fillChunk(chunkX, chunkY, chunkZ);
 									{
 										std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
-										realMeshesQueue.push(meshes.size() - 1);
+										realMeshesQueue.push(meshIndex);
 									}
 									realMeshesQueueCV.notify_one();
 									completedChunks++;
 									newMesh.reset();
 								}
-								newChunk.reset();
 
 								get_free_ram();
 								if(freeRam < 200){ //EMERGENCY ACTION!!! RAM APPROACHING SYSTEM CRASH PROTECTION
@@ -1374,8 +1372,8 @@ void chunker1() {
 					if (y < 0) y--;
 				}
 
+				chunksSearch.clear();
 				makeChunksOrder = false;
-				totalChunksGenerated = 0;
 				worker1Finished = true;
 				generate = false;
 				timeBenchmark(1);
