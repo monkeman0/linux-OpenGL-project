@@ -1061,6 +1061,10 @@ int main() {
 			}
 		}
 
+		if(pressed(BUTTON_J)){
+			std::cout << sizeof(chunksSearch) + (chunksSearch.bucket_count() * sizeof(void*)) + (chunksSearch.size() * (sizeof(decltype(chunksSearch)::value_type) + 16)) << std::endl;
+		}
+
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -1272,7 +1276,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	if (debug.mouseLocked) {
 		camera.ProcessMouseScroll(static_cast<float>(yoffset));
-		projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 1000.0f);
+		projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 2000.0f);
 	}
 }
 
@@ -1311,9 +1315,7 @@ void chunker1() {
 				malloc_trim(0);
 				clearingChunks = false;
 
-				chunksSearch.clear();
-
-				for (int y = 0; y < std::clamp(totalChunks, 0, 15); y++) {
+				for (int y = 0; y < std::clamp(totalChunks, 0, 10); y++) {
 					for (int z = 0; z < totalChunks; z++) {
 						for (int x = 0; x < totalChunks; x++) {
 							if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= totalChunks) {
@@ -1350,7 +1352,7 @@ void chunker1() {
 									std::cerr << "\n\033[31mRAM APPROACHING 100%, EMERGENCY CLEANUP STARTED\n";
 									get_used_ram();
 									size_t minEscape = 0;
-									rss.load() < 500 ? minEscape = rss.load() : minEscape = 500;
+									rss.load() < 400 ? minEscape = rss.load() : minEscape = 400;
 									while(freeRam < minEscape){
 										chunks.remove(0);
 										malloc_trim(0);
@@ -1358,6 +1360,12 @@ void chunker1() {
 									}
 									chunks.shrink_to_fit();
 									malloc_trim(0);
+									chunksSearch.clear();
+									size_t remaining = chunks.size();
+									for(size_t i = 0; i < remaining; i++){
+										std::shared_ptr<Chunk> c = chunks.get(i);
+										if(c) chunksSearch[glm::vec3(c->X, c->Y, c->Z)] = static_cast<unsigned int>(i);
+									}
 									std::cerr << "\033[33mEmergency cleanup done\n\033[0m";
 								}
 								

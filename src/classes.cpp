@@ -8,7 +8,7 @@
 Input input;
 Debug debug;
 short distanceIncriment[] = {
-	1, 1, 2, 2, 4, 4, 8, 10, 10, 20, 20, 20, 20, 20, 20, 40
+	1, 2, 2, 4, 4, 8, 10, 10, 20, 20, 20, 20, 20, 20, 40
 };
 glm::vec3 generatePos = glm::vec3(0.0f, 0.0f, 0.0f);
 std::vector<std::string> ramChunksStrings;
@@ -223,7 +223,7 @@ void Chunk::create(float X, float Y, float Z) {
 }
 
 short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ, float xoffset, float yoffset, float zoffset) {
-    short neighborDistance = trunc(sqrt(((chunkX + xoffset) - generatePos.x) * ((chunkX + xoffset) - generatePos.x) + ((chunkY + yoffset) - generatePos.y) * ((chunkY + yoffset) - generatePos.y) + ((chunkZ + zoffset) - generatePos.z) * ((chunkZ + zoffset) - generatePos.z))) / 100;
+    short neighborDistance = trunc(sqrt(((chunkX + xoffset) - generatePos.x) * ((chunkX + xoffset) - generatePos.x) + ((chunkY + yoffset) - generatePos.y) * ((chunkY + yoffset) - generatePos.y) + ((chunkZ + zoffset) - generatePos.z) * ((chunkZ + zoffset) - generatePos.z))) / 200;
     if (neighborDistance > 15) neighborDistance = 15;
     return distanceIncriment[neighborDistance];
 }
