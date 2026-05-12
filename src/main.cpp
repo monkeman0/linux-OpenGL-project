@@ -741,7 +741,7 @@ int main() {
 				for (size_t i = 0; i < numChunks; i++) {
 					if (clearingChunks.load()) continue;
 					std::shared_ptr<Chunk> chunk = chunks.get(i);
-					//if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
+					if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
 						std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
 						model = glm::mat4(1.0f);
 						model = glm::translate(model, glm::vec3(chunk->X, chunk->Y, chunk->Z));
@@ -752,7 +752,7 @@ int main() {
 						}
 						debugShader.setMat4("model", model);
 						glDrawArrays(GL_TRIANGLES, 0, 36);
-					//}
+					}
 				}
 				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 					glEnable(GL_CULL_FACE);
@@ -1136,7 +1136,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height){
 	if (width == 0 || height == 0) return;
 	window_width = width;
 	window_height = height;
-	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 2000.0f);
+	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 20000.0f);
 	horizontalBlurBuffer.screenUpdate(window_width, window_height);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, width, height, 0, GL_RGBA, GL_UNSIGNED_BYTE, NULL);
 	glViewport(0, 0, width, height);
@@ -1276,7 +1276,7 @@ void mouse_callback(GLFWwindow* window, double xposIn, double yposIn) {
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset) {
 	if (debug.mouseLocked) {
 		camera.ProcessMouseScroll(static_cast<float>(yoffset));
-		projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 2000.0f);
+		projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 20000.0f);
 	}
 }
 
@@ -1315,70 +1315,92 @@ void chunker1() {
 				malloc_trim(0);
 				clearingChunks = false;
 
-				for (int y = 0; y < std::clamp(totalChunks, 0, 10); y++) {
-					for (int z = 0; z < totalChunks; z++) {
-						for (int x = 0; x < totalChunks; x++) {
-							if (sqrt((x * x) + (y * y) * 4 + (z * z)) <= totalChunks) {
-								if (joinableThreads[0] == false) break;
-								float chunkX = generatePos.x + x * 40.0f;
-								float chunkY = generatePos.y + (y - 1) * 40.0f;
-								float chunkZ = generatePos.z + z * 40.0f;
+				struct Voxel {
+    				int x, y, z;
+    				int distSq;
+				};
 
-								if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ)) == chunksSearch.end()){
-									auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
-									chunks.push_back(newChunk);
-									chunksSearch[glm::vec3(chunkX, chunkY, chunkZ)] = chunks.size() - 1;
-								}
+				std::vector<Voxel> voxels;
+				int radius = totalChunks;
+				int radiusV = std::clamp(totalChunks, 0, 10);
+    			int rSq = radius * radius;
 
-								unsigned int chunkIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ));
-								std::shared_ptr<Chunk> chunkPtr = chunks.get(chunkIndex);
-								if(!chunkPtr->empty && !chunkPtr->solid){
-									auto newMesh = std::make_shared<Mesh>();
-									newMesh->chunksIndex = chunkIndex;
-									meshes.push_back(newMesh);
-									unsigned int meshIndex = static_cast<unsigned int>(meshes.size() - 1);
-									newMesh->fillChunk(chunkX, chunkY, chunkZ);
-									{
-										std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
-										realMeshesQueue.push(meshIndex);
-									}
-									realMeshesQueueCV.notify_one();
-									completedChunks++;
-									newMesh.reset();
-								}
+				voxels.reserve(static_cast<size_t>(4.2 * radius * radius * radiusV));
 
-								get_free_ram();
-								if(freeRam < 200){ //EMERGENCY ACTION!!! RAM APPROACHING SYSTEM CRASH PROTECTION
-									std::cerr << "\n\033[31mRAM APPROACHING 100%, EMERGENCY CLEANUP STARTED\n";
-									get_used_ram();
-									size_t minEscape = 0;
-									rss.load() < 400 ? minEscape = rss.load() : minEscape = 400;
-									while(freeRam < minEscape){
-										chunks.remove(0);
-										malloc_trim(0);
-										get_free_ram();
-									}
-									chunks.shrink_to_fit();
-									malloc_trim(0);
-									chunksSearch.clear();
-									size_t remaining = chunks.size();
-									for(size_t i = 0; i < remaining; i++){
-										std::shared_ptr<Chunk> c = chunks.get(i);
-										if(c) chunksSearch[glm::vec3(c->X, c->Y, c->Z)] = static_cast<unsigned int>(i);
-									}
-									std::cerr << "\033[33mEmergency cleanup done\n\033[0m";
-								}
-								
-								x *= -1;
-								if (x < 0) x--;
-							}
-						}
-						z *= -1;
-						if (z < 0) z--;
+				for (int x = -radius; x <= radius; ++x) {
+        			int x2 = x * x;
+        			for (int y = -radiusV; y <= radiusV; ++y) {
+        			    int y2 = y * y;
+        			    if (x2 + y2 > rSq) continue; 
+					
+        			    for (int z = -radius; z <= radius; ++z) {
+        			        int z2 = z * z;
+        			        int dSq = x2 + y2 * 4 + z2;
+        			        if (dSq <= rSq) {
+        			            voxels.push_back({x, y, z, dSq});
+        			        }
+        			    }
+        			}
+    			}
+
+    			std::sort(voxels.begin(), voxels.end(), [](const Voxel& a, const Voxel& b) {
+    			    return a.distSq < b.distSq;
+    			});
+			
+    			for (const auto& v : voxels) {
+					if (joinableThreads[0] == false) break;
+					float chunkX = generatePos.x + v.x * 40.0f;
+					float chunkY = generatePos.y + (v.y - 1) * 40.0f;
+					float chunkZ = generatePos.z + v.z * 40.0f;
+
+					if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ)) == chunksSearch.end()){
+						auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
+						chunks.push_back(newChunk);
+						chunksSearch[glm::vec3(chunkX, chunkY, chunkZ)] = chunks.size() - 1;
 					}
-					y *= -1;
-					if (y < 0) y--;
+
+					unsigned int chunkIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ));
+					std::shared_ptr<Chunk> chunkPtr = chunks.get(chunkIndex);
+					if(!chunkPtr->empty && !chunkPtr->solid){
+						auto newMesh = std::make_shared<Mesh>();
+						newMesh->chunksIndex = chunkIndex;
+						meshes.push_back(newMesh);
+						unsigned int meshIndex = static_cast<unsigned int>(meshes.size() - 1);
+						newMesh->fillChunk(chunkX, chunkY, chunkZ);
+						{
+							std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
+							realMeshesQueue.push(meshIndex);
+						}
+						realMeshesQueueCV.notify_one();
+						completedChunks++;
+						newMesh.reset();
+					}
+
+					get_free_ram();
+					if(freeRam < 200){ //EMERGENCY ACTION!!! RAM APPROACHING SYSTEM CRASH PROTECTION
+						std::cerr << "\n\033[31mRAM APPROACHING 100%, EMERGENCY CLEANUP STARTED\n";
+						get_used_ram();
+						size_t minEscape = 0;
+						rss.load() < 400 ? minEscape = rss.load() : minEscape = 400;
+						while(freeRam < minEscape){
+							if (joinableThreads[0] == false) break;
+							chunks.remove(0);
+							malloc_trim(0);
+							get_free_ram();
+						}
+						chunks.shrink_to_fit();
+						malloc_trim(0);
+						chunksSearch.clear();
+						size_t remaining = chunks.size();
+						for(size_t i = 0; i < remaining; i++){
+							std::shared_ptr<Chunk> c = chunks.get(i);
+							if(c) chunksSearch[glm::vec3(c->X, c->Y, c->Z)] = static_cast<unsigned int>(i);
+						}
+						std::cerr << "\033[33mEmergency cleanup done\n\033[0m";
+					}
 				}
+
+				
 
 				chunksSearch.clear();
 				makeChunksOrder = false;

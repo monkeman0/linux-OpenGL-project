@@ -113,7 +113,7 @@ public:
     float calcNoise(float x, float z);
     float calcNoiseAbsolute(float x, float z);
     void create(float X, float Y, float Z);
-    short neighborDistanceI(float chunkX, float chunkY, float chunkZ, float xoffset, float yoffset, float zoffset);
+    short neighborDistanceI(float chunkX, float chunkY, float chunkZ);
     void clearAndShrink();
     ~Chunk();
 private:

@@ -204,12 +204,7 @@ void Chunk::create(float X, float Y, float Z) {
         this->empty = true;
         //35 chunks: 15.783    PB: 15.783
         //12 chunks: 6.905     PB: 6.905
-        if (debug.useLOD) {
-            distanceI = neighborDistanceI(X, Y, Z, 0.0f, 0.0f, 0.0f);
-        }
-        else {
-            distanceI = 1;
-        }
+        distanceI = neighborDistanceI(X, Y, Z);
         
         for (int z = 0; z < widths; z++) {
             for (int x = 0; x < widths; x++) {
@@ -222,9 +217,9 @@ void Chunk::create(float X, float Y, float Z) {
         }
 }
 
-short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ, float xoffset, float yoffset, float zoffset) {
-    short neighborDistance = trunc(sqrt(((chunkX + xoffset) - generatePos.x) * ((chunkX + xoffset) - generatePos.x) + ((chunkY + yoffset) - generatePos.y) * ((chunkY + yoffset) - generatePos.y) + ((chunkZ + zoffset) - generatePos.z) * ((chunkZ + zoffset) - generatePos.z))) / 200;
-    if (neighborDistance > 15) neighborDistance = 15;
+short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ) {
+    short neighborDistance = trunc(sqrt(((chunkX) - generatePos.x) * ((chunkX) - generatePos.x) + ((chunkY) - generatePos.y) * ((chunkY) - generatePos.y) + ((chunkZ) - generatePos.z) * ((chunkZ) - generatePos.z))) / 200;
+    if (neighborDistance > 14) neighborDistance = 14;
     return distanceIncriment[neighborDistance];
 }
 
