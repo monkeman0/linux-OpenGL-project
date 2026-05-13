@@ -437,11 +437,28 @@ void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
     for (int z = 0; z < chunk.widths; z += this->distanceI) {
         for (int x = 0; x < chunk.widths; x += this->distanceI) {
             int y = (int)chunk.heightMap[x][z];
+            if (y >= 0) y = (y / distanceI) * distanceI;
+
             int yNegX = x - distanceI < 0 ? (int)leftChunk.heightMap[40 - distanceI][z] : (int)chunk.heightMap[x - distanceI][z];
             int yPosX = x + distanceI > 39 ? (int)rightChunk.heightMap[x + distanceI - chunk.widths][z] : (int)chunk.heightMap[x + distanceI][z];
             int yNegZ = z - distanceI < 0 ? (int)backChunk.heightMap[x][40 - distanceI] : (int)chunk.heightMap[x][z - distanceI];
             int yPosZ = z + distanceI > 39 ? (int)frontChunk.heightMap[x][z + distanceI - chunk.widths] : (int)chunk.heightMap[x][z + distanceI];
+            
+            int leftDist = x - distanceI < 0 ? leftChunk.distanceI : distanceI;
+            int rightDist = x + distanceI > 39 ? rightChunk.distanceI : distanceI;
+            int backDist = z - distanceI < 0 ? backChunk.distanceI : distanceI;
+            int frontDist = z + distanceI > 39 ? frontChunk.distanceI : distanceI;
+
+            if (yNegX >= 0) yNegX = (yNegX / leftDist) * leftDist;
+            if (yPosX >= 0) yPosX = (yPosX / rightDist) * rightDist;
+            if (yNegZ >= 0) yNegZ = (yNegZ / backDist) * backDist;
+            if (yPosZ >= 0) yPosZ = (yPosZ / frontDist) * frontDist;
+
             if(y >= 0){
+            if(leftChunk.distanceI < distanceI && x == 0) yNegX-=leftChunk.distanceI;
+            if(rightChunk.distanceI < distanceI && x == chunk.widths - distanceI) yPosX-=rightChunk.distanceI;
+            if(backChunk.distanceI < distanceI && z == 0) yNegZ-=backChunk.distanceI;
+            if(frontChunk.distanceI < distanceI && z == chunk.widths - distanceI) yPosZ-=frontChunk.distanceI;
             unsigned int current = 0;
 
 #define addVertices(exposed)\
@@ -470,8 +487,8 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
                 if(y > yPosZ) addVertices(5);
                 y-=distanceI;
                 if(y < 0) continue;
-                current = 1; //stone
                 while(y >= 0){
+                    current = 1; //stone
                     if(y > yNegX) addVertices(2);
                     if(y > yPosX) addVertices(3);
                     if(y > yNegZ) addVertices(4);
@@ -479,7 +496,7 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
                     y-=distanceI;
                 }
             }else{
-                y--;
+                y-=distanceI;
                 int currentHeight = std::floor(chunk.calcNoise(x, z));
                 if(currentHeight - (Y + chunk.widths) == 0){
                     current = 3; //dirt

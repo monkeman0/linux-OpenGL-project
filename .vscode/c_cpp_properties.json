@@ -16,7 +16,8 @@
                 "${workspaceFolder}/resources/fonts",
                 "${workspaceFolder}/resources/textures",
                 "${workspaceFolder}/src",
-                "/usr/include"
+                "/usr/include",
+                "/usr/local/include"
             ],
             "intelliSenseMode": "linux-gcc-x64",
             "name": "Linux"

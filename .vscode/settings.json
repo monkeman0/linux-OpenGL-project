@@ -61,7 +61,6 @@
         "codecvt": "cpp"
     },
     "editor.tokenColorCustomizations": {
-        
         "[*Light*]": {
             "textMateRules": [
                 {
@@ -87,49 +86,50 @@
                 "scope": "variable.other.property.cpp",
                 "settings": {
                     "foreground": "#fd6179"
-                },
+                }
             },
             {
                 "scope": "variable.other.property.static.cpp",
                 "settings": {
                     "foreground": "#ff3150"
-                },
+                }
             },
             {
                 "scope": "entity.name.function.preprocessor.cpp",
                 "settings": {
                     "foreground": "#ff15e0"
-                },
+                }
             },
             {
                 "scope": "entity.name.namespace",
                 "settings": {
                     "foreground": "#15ad24"
-                },
+                }
             },
             {
                 "scope": "variable.other.global",
                 "settings": {
                     "foreground": "#3f45f5"
-                },
-            },
-            
+                }
+            }
         ]
     },
     "github.copilot.enable": {
         "*": false
     },
-
     "search.exclude": {
-    "**/node_modules": true,
-    "**/bower_components": true,
-    "**/dist": true,
-    "**/build": true
+        "**/node_modules": true,
+        "**/bower_components": true,
+        "**/dist": true,
+        "**/build": true
     },
-    
     "files.watcherExclude": {
         "**/node_modules/**": true,
         "**/dist/**": true,
         "**/build": true
-    }
+    },
+    
+    /* RECOMMENDED FIXES */
+    "C_Cpp.default.compileCommands": "${workspaceFolder}/build/compile_commands.json",
+    "C_Cpp.default.configurationProvider": "ms-vscode.cmake-tools"
 }

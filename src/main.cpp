@@ -1070,7 +1070,7 @@ int main() {
 		ImGui::NewFrame();
 		debugInputs();
 		ImGui::Begin("ImGui window");
-		ImGui::SliderFloat("value", &change, -100.0f, 100.0f, "%.3f", 0);
+		//ImGui::SliderFloat("value", &change, -100.0f, 100.0f, "%.3f", 0);
 		ImGui::Text("FPS: = %i", debug.FPS);
 		ImGui::Text("X: = %f, Y: %f, Z: %f", camera.Position.x, camera.Position.y, camera.Position.z);
 		get_free_ram();
