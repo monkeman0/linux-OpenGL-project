@@ -1,6 +1,6 @@
-#version 330 core
+#version 460 core
 
-layout (location = 0) in vec3 aData;
+layout (location = 0) in float aData;
 
 out vec2 TexCoord;
 
@@ -10,7 +10,7 @@ uniform bool skipped;
 
 void main()
 {
-    int corner = int(aData.x);
+    int corner = int(aData);
     vec3 pos = vec3(0.0f, 0.0f, 0.0f);
 
     switch(corner){
@@ -34,8 +34,6 @@ void main()
 	}
 
 	if(skipped) pos*=0.9f;
-    TexCoord = vec2(aData.y, aData.z);
-    //FragPos = vec3(model * vec4(pos, 1.0));
 
     gl_Position = pv * model * vec4(pos, 1.0);
 }

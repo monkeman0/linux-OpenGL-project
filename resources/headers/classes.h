@@ -58,12 +58,6 @@ public:
 
 extern std::vector<std::string> ramChunksStrings;
 
-struct objectData{
-    unsigned short objects[64000];
-};
-
-extern std::vector<objectData> ramChunks;
-
 class Mesh {
 public:
     float X = 0.0f;
@@ -79,6 +73,8 @@ public:
     unsigned int chunksFrontIndex = 0;
     bool deleted = false;
     mutable std::mutex meshMtx;
+    bool readable = false;
+    bool LODborder = false;
 
     Mesh();
     void init();
@@ -106,6 +102,8 @@ public:
     FastNoiseLite noise;
     FastNoiseLite largeNoise;
     mutable std::mutex chunkMtx;
+    bool usedMesh = false;
+    unsigned int meshIndex = 0;
 
     Chunk();
     Chunk(float X, float Y, float Z);

@@ -12,9 +12,9 @@ short distanceIncriment[] = {
 };
 glm::vec3 generatePos = glm::vec3(0.0f, 0.0f, 0.0f);
 std::vector<std::string> ramChunksStrings;
-std::vector<objectData> ramChunks;
 float SPEED = 8.0f;
 float SENSITIVITY = 0.1f;
+extern std::mutex chunksSearchMutex;
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) {
     std::string vertexCode;
@@ -350,6 +350,11 @@ void Mesh::cleanup() {
 
 Mesh::~Mesh() {
     cleanup();
+    std::shared_ptr<Chunk> chunkPtr = chunks.get(chunksIndex);
+    if (!chunkPtr) return;
+    std::lock_guard<std::mutex> chunkLock(chunkPtr->chunkMtx);
+    Chunk& chunk = *chunkPtr;
+    chunk.usedMesh = false;
 }
 
 void Mesh::updateBuffers() {

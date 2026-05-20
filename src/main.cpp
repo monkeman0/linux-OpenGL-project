@@ -12,11 +12,23 @@
 #include <functional>
 #include <atomic>
 #include <filesystem>
-#include <unistd.h>
 #include <ios>
-#include <malloc.h>
-#include <sys/sysinfo.h> //needs to be changed for windows ram reading
-#include <sys/resource.h> //same as above
+#ifdef _WIN32
+#   include <windows.h>
+#   include <psapi.h>        // GetProcessMemoryInfo
+#else
+#   include <unistd.h>
+#   include <malloc.h>
+#   include <sys/sysinfo.h>
+#   include <sys/resource.h>
+#endif
+
+inline void trim_heap() {
+#if defined(__GLIBC__)
+    malloc_trim(0);
+#endif
+}
+
 
 #include "glad.h"
 #include <GLFW/glfw3.h>
@@ -33,9 +45,6 @@
 #include <ft2build.h>
 #include FT_FREETYPE_H
 
-std::queue<std::function<void()>> startMeshesTaskQueue;
-std::mutex SMqueueMutex;
-std::condition_variable SMqueueCV;
 std::mutex realMeshesQueueMutex;
 std::condition_variable realMeshesQueueCV;
 
@@ -48,6 +57,7 @@ int startingWindow_height = 0;
 
 
 unsigned int bytesFromChunks = 0;
+std::mutex chunksSearchMutex;
 
 #include "tileHandling.h"
 #include "classes.h"
@@ -77,6 +87,7 @@ else if(debug.moveMode == '2'){\
 	camera.MovementSpeed = debug.speed;\
 
 #define debugInputs()\
+if (pressed(BUTTON_B))	debug.showFrustum = !debug.showFrustum;\
 if (pressed(BUTTON_0))	debug.showWireFrame = !debug.showWireFrame;\
 if (pressed(BUTTON_9))  debug.showChunkBorders = !debug.showChunkBorders;\
 if (held(BUTTON_LEFT_CTRL) && pressed(BUTTON_1))	debug.useLOD = !debug.useLOD;\
@@ -220,43 +231,34 @@ struct Frustum {
 
 Frustum createFrustumFromCamera(const Camera& cam, float aspect, float fovY, float zNear, float zFar)
 {
-	Frustum frustum;
+    Frustum frustum;
 
-	glm::vec3 nearCenter = cam.Position + cam.Front * zNear;
-	glm::vec3 farCenter = cam.Position + cam.Front * zFar;
+    float halfVSide = zFar * tanf(fovY * 0.5f);
+    float halfHSide = halfVSide * aspect;
 
-	float halfVSide = zFar * tanf(fovY * 0.5f);
-	float halfHSide = halfVSide * aspect;
+    glm::vec3 frontMultFar = cam.Front * zFar;
 
-	glm::vec3 up = cam.Up;
-	glm::vec3 right = cam.Right;
-	glm::vec3 front = cam.Front;
+    // The Near and Far planes
+    frustum.nearFace = Plane(cam.Position + cam.Front * zNear, cam.Front);
+    frustum.farFace = Plane(cam.Position + frontMultFar, -cam.Front);
 
-	// Near and Far planes
-	frustum.nearFace = Plane(nearCenter, front);
-	frustum.farFace = Plane(farCenter, -front);
+    // Top plane: Cross product of 'Right' and the vector pointing to the top edge
+    glm::vec3 topNormal = glm::cross(cam.Right, glm::normalize(frontMultFar - cam.Up * halfVSide));
+    frustum.topFace = Plane(cam.Position, topNormal);
 
-	// Top plane
-	glm::vec3 topNormal = glm::cross(glm::normalize(glm::cross(right, front)), right);
-	glm::vec3 topPoint = cam.Position + up * halfVSide + front * zFar;
-	frustum.topFace = Plane(topPoint, glm::cross(glm::cross(right, front), right));
+    // Bottom plane: Cross product of 'Right' and the vector pointing to the bottom edge
+    glm::vec3 bottomNormal = glm::cross(glm::normalize(frontMultFar + cam.Up * halfVSide), cam.Right);
+    frustum.bottomFace = Plane(cam.Position, bottomNormal);
 
-	// Bottom plane
-	glm::vec3 bottomNormal = glm::cross(right, glm::normalize(glm::cross(front, -right)));
-	glm::vec3 bottomPoint = cam.Position - up * halfVSide + front * zFar;
-	frustum.bottomFace = Plane(bottomPoint, glm::cross(right, glm::cross(front, -right)));
+    // Left plane: Cross product of the vector pointing to the left edge and 'Up'
+    glm::vec3 leftNormal = glm::cross(glm::normalize(frontMultFar - cam.Right * halfHSide), cam.Up);
+    frustum.leftFace = Plane(cam.Position, leftNormal);
 
-	// Right plane
-	glm::vec3 rightNormal = glm::cross(up, glm::normalize(glm::cross(front, up)));
-	glm::vec3 rightPoint = cam.Position + right * halfHSide + front * zFar;
-	frustum.rightFace = Plane(rightPoint, glm::cross(up, glm::cross(front, up)));
+    // Right plane: Cross product of 'Up' and the vector pointing to the right edge
+    glm::vec3 rightNormal = glm::cross(cam.Up, glm::normalize(frontMultFar + cam.Right * halfHSide));
+    frustum.rightFace = Plane(cam.Position, rightNormal);
 
-	// Left plane
-	glm::vec3 leftNormal = glm::cross(glm::normalize(glm::cross(up, front)), up);
-	glm::vec3 leftPoint = cam.Position - right * halfHSide + front * zFar;
-	frustum.leftFace = Plane(leftPoint, glm::cross(glm::cross(up, front), up));
-
-	return frustum;
+    return frustum;
 }
 
 struct Transform {
@@ -274,50 +276,72 @@ struct Volume {
 	virtual bool isOnFrustum(const Frustum& camFrustum, const Transform& modelTransform) const = 0;
 };
 
-struct Sphere : public Volume {
-	glm::vec3 center{ 0.f, 0.f, 0.f };
-	float radius{ 0.f };
+struct AABB : public Volume {
+    glm::vec3 center{ 0.f, 0.f, 0.f };
+    glm::vec3 extents{ 20.f, 20.f, 20.f }; // Half-dimensions (width/2, height/2, depth/2)
 
-	Sphere(glm::vec3 c, float r)
-		: center(c), radius(r) {
-	}
+    AABB(const glm::vec3& inCenter, float halfX, float halfY, float halfZ)
+        : center(inCenter), extents(halfX, halfY, halfZ) {}
 
-	bool isOnFrustum(const Frustum& camFrustum, const Transform& transform) const final {
-		//Get global scale is computed by doing the magnitude of
-		//X, Y and Z model matrix's column.
-		const glm::vec3 globalScale = transform.scale;
+    bool isOnOrForwardPlane(const Plane& plane) const {
+        // Compute the projection interval radius of the AABB onto the plane normal
+        const float r = extents.x * std::abs(plane.normal.x) +
+                        extents.y * std::abs(plane.normal.y) +
+                        extents.z * std::abs(plane.normal.z);
 
-		//Get our global center with process it with the global model matrix of our transform
-		const glm::vec3 globalCenter = { transform.model * glm::vec4(center, 1.f) };
+        return -r <= plane.getSignedDistanceToPlane(center);
+    }
 
-		//To wrap correctly our shape, we need the maximum scale scalar.
-		const float maxScale = std::max(std::max(globalScale.x, globalScale.y), globalScale.z);
+    bool isOnFrustum(const Frustum& camFrustum, const Transform& transform) const final {
+        // Get our global center by translating it with the model matrix
+        const glm::vec3 globalCenter = glm::vec3(transform.model * glm::vec4(center, 1.f));
 
-		//Max scale is assuming for the diameter. So, we need the half to apply it to our radius
-		Sphere globalSphere(globalCenter, radius * (maxScale * 0.5f));
+        // Since it's a voxel chunk, we assume it is never rotated, only scaled/translated.
+        // This keeps the AABB perfectly axis-aligned in world space!
+        const glm::vec3 globalExtents = extents * transform.scale;
 
-		//Check Firstly the result that have the most chance
-		//to faillure to avoid to call all functions.
-		return (globalSphere.isOnOrForwardPlane(camFrustum.leftFace) &&
-			globalSphere.isOnOrForwardPlane(camFrustum.rightFace) &&
-			globalSphere.isOnOrForwardPlane(camFrustum.farFace) &&
-			globalSphere.isOnOrForwardPlane(camFrustum.nearFace) &&
-			globalSphere.isOnOrForwardPlane(camFrustum.topFace) &&
-			globalSphere.isOnOrForwardPlane(camFrustum.bottomFace));
-	};
+        AABB globalAABB(globalCenter, globalExtents.x, globalExtents.y, globalExtents.z);
 
-	bool isOnOrForwardPlane(const Plane& plane) const {
-		return plane.getSignedDistanceToPlane(center) > -radius;
-	}
-
+        // Check against all 6 planes
+        return (globalAABB.isOnOrForwardPlane(camFrustum.leftFace) &&
+                globalAABB.isOnOrForwardPlane(camFrustum.rightFace) &&
+                globalAABB.isOnOrForwardPlane(camFrustum.nearFace) &&
+                globalAABB.isOnOrForwardPlane(camFrustum.farFace) &&
+                globalAABB.isOnOrForwardPlane(camFrustum.topFace) &&
+                globalAABB.isOnOrForwardPlane(camFrustum.bottomFace));
+    }
 };
+
+std::vector<glm::vec3> getFrustumCornersWorldSpace(const glm::mat4& view, const glm::mat4& projection) {
+    // Inverse of the combined view-projection matrix
+    glm::mat4 invVP = glm::inverse(projection * view);
+
+    // The 8 corners of the NDC cube
+    glm::vec4 ndcCorners[8] = {
+        // Near plane
+        {-1.0f, -1.0f, -1.0f, 1.0f}, { 1.0f, -1.0f, -1.0f, 1.0f}, 
+        { 1.0f,  1.0f, -1.0f, 1.0f}, {-1.0f,  1.0f, -1.0f, 1.0f},
+        // Far plane
+        {-1.0f, -1.0f,  1.0f, 1.0f}, { 1.0f, -1.0f,  1.0f, 1.0f}, 
+        { 1.0f,  1.0f,  1.0f, 1.0f}, {-1.0f,  1.0f,  1.0f, 1.0f}
+    };
+
+    std::vector<glm::vec3> worldCorners;
+    for (int i = 0; i < 8; i++) {
+        glm::vec4 pt = invVP * ndcCorners[i];
+        // Perspective divide is crucial to get real world coordinates!
+        worldCorners.push_back(glm::vec3(pt) / pt.w);
+    }
+
+    return worldCorners;
+}
 
 
 int main() {
 	srand(static_cast<unsigned int>(time(NULL)));
 	glfwInit();
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
-	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
+	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 6);
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	glfwWindowHint(GLFW_DECORATED, GL_TRUE);
 	const GLFWvidmode* mode = glfwGetVideoMode(glfwGetPrimaryMonitor());
@@ -359,7 +383,7 @@ int main() {
 	ImGuiIO& io = ImGui::GetIO(); (void)io;
 	ImGui::StyleColorsDark();
 	ImGui_ImplGlfw_InitForOpenGL(window, true);
-	ImGui_ImplOpenGL3_Init("#version 330 core");
+	ImGui_ImplOpenGL3_Init("#version 460 core");
 
 	if (extraThreads < 1) joinableThreads[0] = false;
 	size_t totalRam = 0;
@@ -367,27 +391,6 @@ int main() {
 		struct sysinfo si;
 		if (sysinfo(&si) == 0) totalRam = (si.totalram * si.mem_unit) / (1024 * 1024);
 	}
-
-	//loads existing chunk data into ram
-	ramChunksStrings.push_back("start");
-	objectData* blankChunkFileData;
-	blankChunkFileData = new objectData;
-	ramChunks.push_back(*blankChunkFileData);
-	delete blankChunkFileData;
-	std::fstream chunkFile;
-    chunkFile.open("../resources/data/storedChunks.wrld", std::ios::in);
-    if (chunkFile.is_open()) {
-        std::string line;
-        while (getline(chunkFile, line)) {
-			if(line[0] == '#'){
-				ramChunksStrings.push_back(line);
-				objectData temp;
-				ramChunks.push_back(temp);
-			}
-        }
-        chunkFile.close();
-    }
-
 
 	//initialize fonts and openGL settings
 	//glEnable(GL_MULTISAMPLE);
@@ -484,6 +487,7 @@ int main() {
 	Shader debugShader("../resources/shaders/debug.vert", "../resources/shaders/debug.frag");
 	Shader horizontalBlurShader("../resources/shaders/simple.vert", "../resources/shaders/horizontalBlur.frag");
 	Shader verticalBlurShader("../resources/shaders/simple.vert", "../resources/shaders/verticalBlur.frag");
+	Shader frustumShader("../resources/shaders/frustum.vert", "../resources/shaders/frustum.frag");
 
 	//vertex buffer objects and vertex array objects 
 	unsigned int lightVAOs[1], lightVBOs[1];
@@ -585,6 +589,16 @@ int main() {
 	glBindVertexArray(debugVAO);
 	glBindBuffer(GL_ARRAY_BUFFER, debugVBO);
 	glBufferData(GL_ARRAY_BUFFER, sizeof(debugVertices), &debugVertices, GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 1, GL_FLOAT, GL_FALSE, 1 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+
+	unsigned int frusVAO, frusVBO, frusEBO;
+	glGenVertexArrays(1, &frusVAO);
+	glGenBuffers(1, &frusVBO);
+	glGenBuffers(1, &frusEBO);
+	glBindVertexArray(frusVAO);
+	glBindBuffer(GL_ARRAY_BUFFER, frusVBO);
+	glBufferData(GL_ARRAY_BUFFER, sizeof(float), &debugVertices, GL_DYNAMIC_DRAW);
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
@@ -643,7 +657,7 @@ int main() {
 	glm::vec3 up = glm::vec3(0.0f, 1.0f, 0.0f);
 	glm::vec3 cameraRight = glm::normalize(glm::cross(up, cameraDirection));
 	glm::vec3 cameraUp = glm::cross(cameraDirection, cameraRight);
-	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 1000.0f); // last float is frustum distance
+	projection = glm::perspective(glm::radians(camera.Zoom), float(window_width) / float(window_height), 0.1f, 20000.0f); // last float is frustum distance
 
 	shaderProgramBlocks.use();
 	shaderProgramBlocks.setInt("material.diffuse", 1);
@@ -670,25 +684,10 @@ int main() {
 	};
 
 	float change = 4.1f;
+	Frustum frus;
+	bool frustumDebugReady = false;
 
-	Frustum frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 1000.f);
-	
 	while (!glfwWindowShouldClose(window)) {
-
-		{
-			// Drain all queued tasks quickly and execute them without holding SMqueueMutex.
-			std::vector<std::function<void()>> tasks;
-			{
-				std::lock_guard<std::mutex> qlock(SMqueueMutex);
-				while (!startMeshesTaskQueue.empty()) {
-					tasks.push_back(std::move(startMeshesTaskQueue.front()));
-					startMeshesTaskQueue.pop();
-				}
-			}
-			for (auto &t : tasks) {
-				if (t) t();
-			}
-		}
 
 		//get input changed bools ready to recieve input
 		for (int i = 0; i < BUTTON_COUNT; i++) {
@@ -733,7 +732,7 @@ int main() {
 
 			if (debug.showChunkBorders) {
 				glDisable(GL_CULL_FACE);
-				glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
+				
 				debugShader.use();
 				debugShader.setMat4("pv", projection * view);
 				glBindVertexArray(debugVAO);
@@ -741,7 +740,7 @@ int main() {
 				for (size_t i = 0; i < numChunks; i++) {
 					if (clearingChunks.load()) continue;
 					std::shared_ptr<Chunk> chunk = chunks.get(i);
-					if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
+					//if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
 						std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
 						model = glm::mat4(1.0f);
 						model = glm::translate(model, glm::vec3(chunk->X, chunk->Y, chunk->Z));
@@ -751,11 +750,10 @@ int main() {
 							debugShader.setBool("skipped", false);
 						}
 						debugShader.setMat4("model", model);
-						glDrawArrays(GL_TRIANGLES, 0, 36);
-					}
+						glDrawArrays(GL_LINES, 0, 24);
+					//}
 				}
-				glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-					glEnable(GL_CULL_FACE);
+				glEnable(GL_CULL_FACE);
 			}
 
 		shaderProgramBlocks.use();
@@ -804,45 +802,45 @@ int main() {
 		shaderProgramBlocks.setFloat("spotLight.cutOff", glm::cos(glm::radians(15.0f)));
 		shaderProgramBlocks.setFloat("spotLight.outerCutOff", glm::cos(glm::radians(17.5f)));*/
 
-		if (held(BUTTON_B)) setSpawn(camera.Position.x, camera.Position.z);
+		if(!debug.showFrustum) frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 20000.f);
 
-			{
-	    		size_t numMeshes = meshes.size();
-	    		for (size_t i = 0; i < numMeshes; i++) {
-					if (clearingChunks.load()) continue;
-					std::shared_ptr<Mesh> mesh = meshes.get(i);
-					if (mesh && mesh->VAO != 0) {
-						model = glm::mat4(1.0f);
-						model = glm::translate(model, glm::vec3(mesh->X, mesh->Y, mesh->Z));
-						glBindVertexArray(mesh->VAO);
-						shaderProgramBlocks.setFloat("LODstep", float(mesh->distanceI));
-						shaderProgramBlocks.setMat4("model", model);
-						shaderProgramBlocks.setFloat("material.shininess", 32.f);
-						glDrawArrays(GL_TRIANGLES, 0, mesh->vertices.size());
-					}
-					mesh.reset();
-	    		}
-			}
+		{
+		    size_t numMeshes = meshes.size();
+		    for (size_t i = 0; i < numMeshes; i++) {
+		        if (clearingChunks.load()) continue;
+			
+		        std::shared_ptr<Mesh> mesh = meshes.get(i);
+		        if (mesh && mesh->VAO != 0 && mesh->readable) {
+				
+		            glm::mat4 model = glm::mat4(1.0f);
+		            model = glm::translate(model, glm::vec3(mesh->X, mesh->Y, mesh->Z));
+				
+		            Transform meshTransform(
+		                glm::vec3(mesh->X, mesh->Y, mesh->Z),
+		                glm::vec3(0.0f),
+		                glm::vec3(1.0f),
+		                model
+		            );
+			
+					AABB check(glm::vec3(20.0f, 20.0f, 20.0f), 20.0f, 20.0f, 20.0f);
 
-		/*frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 1000.f);
-		for (unsigned int i = 0; i < realMeshes.size(); i++) {
-			Sphere check(glm::vec3(meshes[realMeshes[i]].X, meshes[realMeshes[i]].Y, meshes[realMeshes[i]].Z), 20);
-			model = glm::mat4(1.0f);
-			model = glm::translate(model, glm::vec3(meshes[realMeshes[i]].X, meshes[realMeshes[i]].Y, meshes[realMeshes[i]].Z));
-			if (check.isOnFrustum(frus, {
-				glm::vec3(meshes[realMeshes[i]].X, meshes[realMeshes[i]].Y, meshes[realMeshes[i]].Z),
-				glm::vec3(0.0f),
-				glm::vec3(1.0f),
-				model
-			})){
-				glBindVertexArray(meshes[realMeshes[i]].VAO);
-				shaderProgramBlocks.setFloat("LODstep", float(meshes[realMeshes[i]].distanceI));
-				shaderProgramBlocks.setMat4("model", model);
-				shaderProgramBlocks.setFloat("material.shininess", 32.f);
-				//glDrawElements(GL_TRIANGLES, meshes[i].indicesAmount, GL_UNSIGNED_INT, 0);
-				glDrawArrays(GL_TRIANGLES, 0, meshes[realMeshes[i]].length);
-			}
-		}*/
+		            if (check.isOnFrustum(frus, meshTransform)) {
+		                glBindVertexArray(mesh->VAO);
+		                shaderProgramBlocks.setFloat("LODstep", float(mesh->distanceI));
+		                shaderProgramBlocks.setMat4("model", model);
+		                shaderProgramBlocks.setFloat("material.shininess", 32.f);
+		                glDrawArrays(GL_TRIANGLES, 0, mesh->vertices.size());
+		            }
+				   	/*glBindVertexArray(mesh->VAO);
+		            shaderProgramBlocks.setFloat("LODstep", float(mesh->distanceI));
+		            shaderProgramBlocks.setMat4("model", model);
+		            shaderProgramBlocks.setFloat("material.shininess", 32.f);
+		            glDrawArrays(GL_TRIANGLES, 0, mesh->vertices.size());*/
+		        }
+		    }
+		}
+
+		
 		glBindFramebuffer(GL_FRAMEBUFFER, 0);
 
 		glDisable(GL_DEPTH_TEST);
@@ -905,7 +903,58 @@ int main() {
 		darkVerticalBlurBuffer.readFrom();
 		glDrawArrays(GL_TRIANGLES, 0, 6);*/
 
+
+		if(debug.showFrustum){
+			glBindVertexArray(frusVAO);
+			frustumShader.use();
+			if(pressed(BUTTON_F)){
+				frus = createFrustumFromCamera(camera, float(window_width) / float(window_height), glm::radians(camera.Zoom), 0.1f, 20000.f);
+				float aspect = float(window_width) / float(window_height);
+				glm::mat4 debugProj = glm::perspective(glm::radians(camera.Zoom), aspect, 0.1f, 1000.0f);	
+				// 2. Use camera.GetViewMatrix() and our debugProj to get the corners
+				std::vector<glm::vec3> cornersI = getFrustumCornersWorldSpace(camera.GetViewMatrix(), debugProj);	
+				float corners[24] = {0.0f};
+				for (int i = 0; i < 8; i++) {
+				    corners[i * 3 + 0] = cornersI[i].x;
+				    corners[i * 3 + 1] = cornersI[i].y;
+				    corners[i * 3 + 2] = cornersI[i].z;
+				}
+			
+				unsigned int frustumIndices[] = {
+    				// Near plane (Front)
+    				0, 1, 2,   0, 2, 3,
+    				// Far plane (Back)
+    				4, 7, 6,   4, 6, 5,
+    				// Left plane
+    				0, 3, 7,   0, 7, 4,
+    				// Right plane
+    				1, 5, 6,   1, 6, 2,
+    				// Top plane
+    				3, 2, 6,   3, 6, 7,
+    				// Bottom plane
+    				0, 4, 5,   0, 5, 1
+				};
+			
+				glBindBuffer(GL_ARRAY_BUFFER, frusVBO);
+				glBufferData(GL_ARRAY_BUFFER, sizeof(corners), corners, GL_DYNAMIC_DRAW);	
+				glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, frusEBO);
+				glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(frustumIndices), frustumIndices, GL_DYNAMIC_DRAW);	
+				glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
+				glEnableVertexAttribArray(0);	
+				frustumDebugReady = true;
+			}
+			frustumShader.setMat4("view", camera.GetViewMatrix()); 
+    		frustumShader.setMat4("projection", projection);
+			glm::mat4 model = glm::mat4(1.0f);
+    		frustumShader.setMat4("model", model);
+			glDisable(GL_CULL_FACE);
+			if(frustumDebugReady) glDrawElements(GL_TRIANGLES, 36, GL_UNSIGNED_INT, 0);
+			glEnable(GL_CULL_FACE);
+		}
+
 		glEnable(GL_DEPTH_TEST);
+
+		
 
 		//glDrawElements(GL_TRIANGLES, mainMesh.indicesAmount, GL_UNSIGNED_INT, 0);
 
@@ -1052,7 +1101,7 @@ int main() {
 					std::lock_guard<std::mutex> meshLock(mesh->meshMtx);
 					if (mesh->VAO == 0) mesh->init();
 					mesh->updateBuffers();
-					//most meshes don't make it here???
+					mesh->readable = true;
 				}
 				mesh.reset();
 				lk.lock();
@@ -1077,7 +1126,7 @@ int main() {
 		get_used_ram();
 		ImGui::Text("Memory used in MB: %llu, GB: %llu", (unsigned long long)rss.load(), (unsigned long long)(rss.load() / 1024));
 		ImGui::Text("free RAM in MB: %llu, GB: %llu", (unsigned long long)freeRam.load(), (unsigned long long)(freeRam.load()/1024));
-		ImGui::Text("total RAM in MB: %llu, GB: %llu", (unsigned long long)totalRam, (unsigned long long)(totalRam/1024));
+		ImGui::Text("frustum debug on: %d", debug.showFrustum);
 
 		ImGui::SliderFloat("Render Distance", &sliderTester1, 1, 100, "%.f", 0);
 
@@ -1094,10 +1143,8 @@ int main() {
 	ImGui::DestroyContext();
 	joinableThreads[0] = false;
 	// Wake up all possible waits in worker thread
-	SMqueueCV.notify_all();
 	realMeshesQueueCV.notify_all();
 	worker1.join();
-	if(chunkFile.is_open()) chunkFile.close();
 	chunks.clear();
 	meshes.clear();
 	glDeleteVertexArrays(1, &foliageVAO);
@@ -1302,7 +1349,7 @@ void chunker1() {
 				generate = true;
 
 				clearingChunks = true;
-				chunks.clear();
+				/*chunks.clear();
 				size_t numMeshes = meshes.size();
 				for (size_t i = 0; i < numMeshes; i++) {
 					std::shared_ptr<Mesh> mesh = meshes.get(i);
@@ -1312,7 +1359,7 @@ void chunker1() {
 				meshes.clear();
 				chunks.shrink_to_fit();
 				meshes.shrink_to_fit();
-				malloc_trim(0);
+				trim_heap();*/
 				clearingChunks = false;
 
 				struct Voxel {
@@ -1348,66 +1395,81 @@ void chunker1() {
     			});
 			
     			for (const auto& v : voxels) {
-					if (joinableThreads[0] == false) break;
-					float chunkX = generatePos.x + v.x * 40.0f;
-					float chunkY = generatePos.y + (v.y - 1) * 40.0f;
-					float chunkZ = generatePos.z + v.z * 40.0f;
+                    if (joinableThreads[0] == false) break;
+                    float chunkX = generatePos.x + v.x * 40.0f;
+                    float chunkY = generatePos.y + (v.y - 1) * 40.0f;
+                    float chunkZ = generatePos.z + v.z * 40.0f;
 
-					if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ)) == chunksSearch.end()){
-						auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
-						chunks.push_back(newChunk);
-						chunksSearch[glm::vec3(chunkX, chunkY, chunkZ)] = chunks.size() - 1;
-					}
 
-					unsigned int chunkIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ));
-					std::shared_ptr<Chunk> chunkPtr = chunks.get(chunkIndex);
-					if(!chunkPtr->empty && !chunkPtr->solid){
-						auto newMesh = std::make_shared<Mesh>();
-						newMesh->chunksIndex = chunkIndex;
-						meshes.push_back(newMesh);
-						unsigned int meshIndex = static_cast<unsigned int>(meshes.size() - 1);
-						newMesh->fillChunk(chunkX, chunkY, chunkZ);
-						{
-							std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
-							realMeshesQueue.push(meshIndex);
-						}
-						realMeshesQueueCV.notify_one();
-						completedChunks++;
-						newMesh.reset();
-					}
+                    if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ)) == chunksSearch.end()){
+                        auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ);
+                        chunks.push_back(newChunk);
+                        chunksSearch[glm::vec3(chunkX, chunkY, chunkZ)] = chunks.size() - 1;
+                    }
 
-					get_free_ram();
-					if(freeRam < 200){ //EMERGENCY ACTION!!! RAM APPROACHING SYSTEM CRASH PROTECTION
-						std::cerr << "\n\033[31mRAM APPROACHING 100%, EMERGENCY CLEANUP STARTED\n";
-						get_used_ram();
-						size_t minEscape = 0;
-						rss.load() < 400 ? minEscape = rss.load() : minEscape = 400;
-						while(freeRam < minEscape){
-							if (joinableThreads[0] == false) break;
-							chunks.remove(0);
-							malloc_trim(0);
-							get_free_ram();
-						}
-						chunks.shrink_to_fit();
-						malloc_trim(0);
-						chunksSearch.clear();
-						size_t remaining = chunks.size();
-						for(size_t i = 0; i < remaining; i++){
-							std::shared_ptr<Chunk> c = chunks.get(i);
-							if(c) chunksSearch[glm::vec3(c->X, c->Y, c->Z)] = static_cast<unsigned int>(i);
-						}
-						std::cerr << "\033[33mEmergency cleanup done\n\033[0m";
-					}
-				}
 
-				
+                    unsigned int chunkIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ));
+                    std::shared_ptr<Chunk> chunkPtr = chunks.get(chunkIndex);
+                    if(!chunkPtr->empty && !chunkPtr->solid){
+                        if(!chunkPtr->usedMesh){
+                            auto newMesh = std::make_shared<Mesh>();
+                            newMesh->chunksIndex = chunkIndex;
+                            meshes.push_back(newMesh);
+                            unsigned int meshIndex = static_cast<unsigned int>(meshes.size() - 1);
+                            newMesh->fillChunk(chunkX, chunkY, chunkZ);
+                            {
+                                std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
+                                realMeshesQueue.push(meshIndex);
+                            }
+                            realMeshesQueueCV.notify_one();
+                            completedChunks++;
+                            newMesh.reset();
+                            chunkPtr->usedMesh = true;
+                            chunkPtr->meshIndex = meshIndex;
+                        }else{
+                            chunkPtr->distanceI = chunkPtr->neighborDistanceI(chunkX, chunkY, chunkZ);
+                            std::shared_ptr<Mesh> mesh = meshes.get(chunkPtr->meshIndex);
+                            
+                        }
+                    }
 
-				chunksSearch.clear();
+                    get_free_ram();
+                    if(freeRam < 150){ //EMERGENCY ACTION!!! RAM APPROACHING SYSTEM CRASH PROTECTION
+                        std::cerr << "\nRAM APPROACHING 100%, EMERGENCY CLEANUP STARTED\n";
+                        get_used_ram();
+                        size_t minEscape = 0;
+                        rss.load() < 350 ? minEscape = 150 + rss.load() / 2 : minEscape = 350;
+						std::cout << "minEscape: " << minEscape << std::endl;
+                        while(freeRam < minEscape){
+                            if (joinableThreads[0] == false) break;
+                            if(chunks.size() >= 1){
+								chunks.remove(0);
+							}else{
+								break;
+							}
+                            trim_heap();
+                            get_free_ram();
+                        }
+                        chunks.shrink_to_fit();
+                        trim_heap();
+                        {
+                            std::lock_guard<std::mutex> lk(chunksSearchMutex);
+                            chunksSearch.clear();
+                        }
+                        size_t remaining = chunks.size();
+                        for(size_t i = 0; i < remaining; i++){
+                            std::shared_ptr<Chunk> c = chunks.get(i);
+                            if(c) chunksSearch[glm::vec3(c->X, c->Y, c->Z)] = static_cast<unsigned int>(i);
+                        }
+                        std::cerr << "Emergency cleanup done\n";
+                    }
+            	}
+
 				makeChunksOrder = false;
 				worker1Finished = true;
 				generate = false;
 				timeBenchmark(1);
-				malloc_trim(0);
+				trim_heap();
 			}
 
 		}
@@ -1443,23 +1505,41 @@ void setSpawn(float x, float z) {
 
 //in mb
 void get_free_ram(){
-	struct sysinfo si;
-	if (sysinfo(&si) == 0) freeRam = (si.freeram * si.mem_unit) / (1024 * 1024);
+#ifdef _WIN32
+    MEMORYSTATUSEX memStatus;
+    memStatus.dwLength = sizeof(memStatus);
+    if (GlobalMemoryStatusEx(&memStatus))
+        freeRam = static_cast<size_t>(memStatus.ullAvailPhys / (1024 * 1024));
+#else
+    struct sysinfo si;
+    if (sysinfo(&si) == 0) freeRam = (si.freeram * si.mem_unit) / (1024 * 1024);
+#endif
 }
+
 
 //in mb
 void get_used_ram() {
+#ifdef _WIN32
+    PROCESS_MEMORY_COUNTERS_EX pmc;
+    pmc.cb = sizeof(pmc);
+    if (GetProcessMemoryInfo(GetCurrentProcess(),
+            reinterpret_cast<PROCESS_MEMORY_COUNTERS*>(&pmc), sizeof(pmc)))
+        rss.store(pmc.WorkingSetSize / (1024 * 1024));
+#else
     std::ifstream stat_stream("/proc/self/statm", std::ios_base::in);
     if (!stat_stream) return;
+
 
     size_t total_pages, resident_pages;
     if (stat_stream >> total_pages >> resident_pages) {
         long page_size = sysconf(_SC_PAGESIZE);
         size_t current_rss_mb = (resident_pages * page_size) / (1024 * 1024);
-        
+       
         rss.store(current_rss_mb);
     }
+#endif
 }
+
 
 void window_focus_callback(GLFWwindow* window, int focused) {
 	for (int i = 0; i < BUTTON_COUNT; i++) {

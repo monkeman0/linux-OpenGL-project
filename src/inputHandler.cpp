@@ -76,6 +76,7 @@ struct Debug {
 	float speed = 4.0f;
 	bool showChunkBorders = false;
 	bool useLOD = true;
+	bool showFrustum = false;
 };
 
 #define held(b) input.buttons[b].is_down
