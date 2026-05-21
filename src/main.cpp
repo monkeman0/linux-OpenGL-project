@@ -48,8 +48,8 @@ inline void trim_heap() {
 std::mutex realMeshesQueueMutex;
 std::condition_variable realMeshesQueueCV;
 
-float sliderTester1 = 11;
-float sliderTester2 = 40;
+float sliderTester1 = 45;
+float sliderTester2 = 32;
 float sliderTester3 = 0.f;
 float t1, t2, t3, t4, t5 = 0.f;
 int startingWindow_width = 0;
@@ -63,7 +63,8 @@ std::mutex chunksSearchMutex;
 #include "classes.h"
 #include "cameraClass.h"
 
-std::unordered_map<glm::vec3, unsigned int, vec3Hash> chunksSearch;
+std::unordered_map<glm::vec3, unsigned int> chunksSearch;
+std::unordered_map<glm::vec2, float[32*32]> noiseSearch;
 
 double pi = 3.141592653589793;
 float deltaTime = 0.0f;
@@ -152,8 +153,6 @@ frameBuffer plainTerrainBuffer;
 frameBuffer darkHorizontalBlurBuffer;
 frameBuffer darkVerticalBlurBuffer;
 
-template <typename T>
-unsigned int sizeOf(T container, unsigned int length);
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void key_callback(GLFWwindow* window, int key, int scancode, int action, int mods);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
@@ -278,7 +277,7 @@ struct Volume {
 
 struct AABB : public Volume {
     glm::vec3 center{ 0.f, 0.f, 0.f };
-    glm::vec3 extents{ 20.f, 20.f, 20.f }; // Half-dimensions (width/2, height/2, depth/2)
+    glm::vec3 extents{ 16.f, 16.f, 16.f }; // Half-dimensions (width/2, height/2, depth/2)
 
     AABB(const glm::vec3& inCenter, float halfX, float halfY, float halfZ)
         : center(inCenter), extents(halfX, halfY, halfZ) {}
@@ -549,7 +548,7 @@ int main() {
 	//glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, EBOs[0]);
 	//glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(indicesSameTextureBlock), indicesSameTextureBlock, GL_DYNAMIC_DRAW);
 
-
+	Chunk::noiseInit();
 	setSpawn(0, 0);
 
 	/*
@@ -698,7 +697,7 @@ int main() {
 		lastTime = float(glfwGetTime());
 		glfwPollEvents();
 
-		glm::vec3 prevPos = glm::vec3(round(camera.Position.x / 40) * 40.0f, round(camera.Position.y / 40) * 40.0f, round(camera.Position.z / 40) * 40.0f);
+		glm::vec3 prevPos = glm::vec3(round(camera.Position.x / 32) * 32.0f, round(camera.Position.y / 32) * 32.0f, round(camera.Position.z / 32) * 32.0f);
 		//std::cout << "X: " << prevPos.x << " Y: " << prevPos.y << " Z: " << prevPos.z << '\n';
 
 		if (held(BUTTON_W))  camera.ProcessKeyboard(FORWARD, deltaTime);
@@ -710,7 +709,7 @@ int main() {
 		camera.Roll *= (abs((atan(deltaTime * 10.0f) - 95.f) * 0.01f) * (abs(camera.Roll) > 0.05f));
 		camera.updateCameraVectors();
 
-		glm::vec3 newPos = glm::vec3(round(camera.Position.x / 40) * 40.0f, round(camera.Position.y / 40) * 40.0f, round(camera.Position.z / 40) * 40.0f);
+		glm::vec3 newPos = glm::vec3(round(camera.Position.x / 32) * 32.0f, round(camera.Position.y / 32) * 32.0f, round(camera.Position.z / 32) * 32.0f);
 
 		if (newPos != prevPos) {
 
@@ -740,10 +739,21 @@ int main() {
 				for (size_t i = 0; i < numChunks; i++) {
 					if (clearingChunks.load()) continue;
 					std::shared_ptr<Chunk> chunk = chunks.get(i);
-					//if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
-						std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
-						model = glm::mat4(1.0f);
-						model = glm::translate(model, glm::vec3(chunk->X, chunk->Y, chunk->Z));
+					std::lock_guard<std::mutex> chunkLock(chunk->chunkMtx);
+
+					model = glm::mat4(1.0f);
+					model = glm::translate(model, glm::vec3(chunk->X, chunk->Y, chunk->Z));
+
+					Transform chunkTransform(
+		                glm::vec3(chunk->X, chunk->Y, chunk->Z),
+		                glm::vec3(0.0f),
+		                glm::vec3(1.0f),
+		                model
+		            );
+			
+					AABB check(glm::vec3(16.0f, 16.0f, 16.0f), 16.0f, 16.0f, 16.0f);
+
+		            if (check.isOnFrustum(frus, chunkTransform)) {
 						if(chunk->solid || chunk->empty){
 							debugShader.setBool("skipped", true);
 						}else{
@@ -751,6 +761,9 @@ int main() {
 						}
 						debugShader.setMat4("model", model);
 						glDrawArrays(GL_LINES, 0, 24);
+					}
+					//if(chunk && sqrt((chunk->X - camera.Position.x) * (chunk->X - camera.Position.x) + (chunk->Y - camera.Position.y) * (chunk->Y - camera.Position.y) + (chunk->Z - camera.Position.z) * (chunk->Z - camera.Position.z)) < 150){
+						
 					//}
 				}
 				glEnable(GL_CULL_FACE);
@@ -822,7 +835,7 @@ int main() {
 		                model
 		            );
 			
-					AABB check(glm::vec3(20.0f, 20.0f, 20.0f), 20.0f, 20.0f, 20.0f);
+					AABB check(glm::vec3(16.0f, 16.0f, 16.0f), 16.0f, 16.0f, 16.0f);
 
 		            if (check.isOnFrustum(frus, meshTransform)) {
 		                glBindVertexArray(mesh->VAO);
@@ -1072,8 +1085,6 @@ int main() {
 			glDrawArrays(GL_TRIANGLES, 72, 6);
 		}*/
 
-		if(pressed(BUTTON_F)) bytesFromChunks = sizeOf(ramChunksStrings, ramChunksStrings.size());
-
 		if (pressed(BUTTON_8) && generate.load() == false) {
 			unsigned int count = 0;
 			totalChunks = 0;
@@ -1168,15 +1179,6 @@ int main() {
 	verticalBlurShader.Delete();
 	glfwTerminate();
 	return 0;
-}
-
-template <typename T>
-unsigned int sizeOf(T container, unsigned int length){
-	unsigned int total = 0;
-	for(int i = 0; i < length; i++){
-		total += sizeof(container[i]);
-	}
-	return total;
 }
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height){
@@ -1369,14 +1371,13 @@ void chunker1() {
 
 				std::vector<Voxel> voxels;
 				int radius = totalChunks;
-				int radiusV = std::clamp(totalChunks, 0, 10);
     			int rSq = radius * radius;
 
-				voxels.reserve(static_cast<size_t>(4.2 * radius * radius * radiusV));
+				voxels.reserve(static_cast<size_t>(4.2 * radius * radius * radius));
 
 				for (int x = -radius; x <= radius; ++x) {
         			int x2 = x * x;
-        			for (int y = -radiusV; y <= radiusV; ++y) {
+        			for (int y = -radius; y <= radius; ++y) {
         			    int y2 = y * y;
         			    if (x2 + y2 > rSq) continue; 
 					
@@ -1396,9 +1397,9 @@ void chunker1() {
 			
     			for (const auto& v : voxels) {
                     if (joinableThreads[0] == false) break;
-                    float chunkX = generatePos.x + v.x * 40.0f;
-                    float chunkY = generatePos.y + (v.y - 1) * 40.0f;
-                    float chunkZ = generatePos.z + v.z * 40.0f;
+                    float chunkX = generatePos.x + v.x * 32.0f;
+                    float chunkY = generatePos.y + (v.y - 1) * 32.0f;
+                    float chunkZ = generatePos.z + v.z * 32.0f;
 
 
                     if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ)) == chunksSearch.end()){

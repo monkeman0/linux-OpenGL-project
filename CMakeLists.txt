@@ -4,6 +4,8 @@ cmake_policy(SET CMP0072 NEW)
 
 # Suppress CMake developer warnings from external libraries
 set(CMAKE_SUPPRESS_DEVELOPER_WARNINGS ON CACHE INTERNAL "")
+set(FASTNOISE2_NOISETOOL OFF CACHE BOOL "" FORCE)
+set(FASTNOISE2_TESTS OFF CACHE BOOL "" FORCE)
 
 find_package(OpenGL REQUIRED)
 
@@ -36,10 +38,12 @@ include_directories(
 )
 
 add_subdirectory(resources/libraries/freetype)
+add_subdirectory(resources/libraries/FastNoise2)
 
 target_link_libraries(linux_opengl_hope
     glfw
     OpenGL::GL
     freetype
+    FastNoise
 )
 

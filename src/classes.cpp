@@ -8,13 +8,14 @@
 Input input;
 Debug debug;
 short distanceIncriment[] = {
-	1, 2, 2, 4, 4, 8, 10, 10, 20, 20, 20, 20, 20, 20, 40
+	1, 2, 2, 4, 4, 8, 10, 10, 20, 20, 20, 20, 20, 20, 32
 };
 glm::vec3 generatePos = glm::vec3(0.0f, 0.0f, 0.0f);
 std::vector<std::string> ramChunksStrings;
 float SPEED = 8.0f;
 float SENSITIVITY = 0.1f;
 extern std::mutex chunksSearchMutex;
+auto finalNode = FastNoise::New<FastNoise::DomainScale>();
 
 Shader::Shader(const char* vertexPath, const char* fragmentPath, const char* geometryPath) {
     std::string vertexCode;
@@ -151,49 +152,58 @@ Texture::Texture(const char* texturePaths[], short int textureNumber, GLint inte
     }
 }
 
-Chunk::Chunk() { initialNoiseSet(); }
+Chunk::Chunk() {}
+
+void Chunk::noiseInit(){
+    auto superSimplex = FastNoise::New<FastNoise::SuperSimplex>();
+    superSimplex->SetOutputMin(-2.0f);
+    superSimplex->SetOutputMax(5.f);
+    superSimplex->SetScale(300.f);
+    auto mult1 = FastNoise::New<FastNoise::Multiply>();
+    mult1->SetLHS(superSimplex);
+    mult1->SetRHS(4.f);
+    auto fractal = FastNoise::New<FastNoise::FractalFBm>();
+    fractal->SetSource(superSimplex);
+    fractal->SetGain(-0.48f);
+    fractal->SetLacunarity(2.f);
+    fractal->SetOctaveCount(5);
+    fractal->SetWeightedStrength(-0.36f);
+    auto Msmooth = FastNoise::New<FastNoise::MaxSmooth>();
+    Msmooth->SetLHS(fractal);
+    Msmooth->SetRHS(-1.54);
+    Msmooth->SetSmoothness(8.52f);
+    auto mult2 = FastNoise::New<FastNoise::Multiply>();
+    mult2->SetLHS(Msmooth);
+    mult2->SetRHS(1.7f);
+    auto pow = FastNoise::New<FastNoise::PowInt>();
+    pow->SetValue(mult2);
+    pow->SetPow(2);
+    auto sub = FastNoise::New<FastNoise::Subtract>();
+    sub->SetLHS(pow);
+    sub->SetRHS(10.f);
+    auto mult3 = FastNoise::New<FastNoise::Multiply>();
+    mult3->SetLHS(sub);
+    mult3->SetRHS(1.5f); 
+
+    auto mult4 = FastNoise::New<FastNoise::Multiply>();
+    mult4->SetLHS(mult1);
+    mult4->SetRHS(30.f);
+    auto scale = FastNoise::New<FastNoise::DomainScale>();
+    scale->SetSource(mult4);
+    scale->SetScaling(0.2f);
+    auto finalCombine = FastNoise::New<FastNoise::Add>();
+    finalCombine->SetLHS(mult3);
+    finalCombine->SetRHS(scale);
+
+    finalNode->SetSource(finalCombine);
+}
 
 Chunk::Chunk(float X, float Y, float Z) {
-    initialNoiseSet();
     create(X, Y, Z);
 }
 
-void Chunk::initialNoiseSet() {
-    this->noise.SetNoiseType(FastNoiseLite::NoiseType_OpenSimplex2S);
-    this->noise.SetSeed(0);
-    this->noise.SetFrequency(0.002f);
-    this->noise.SetFractalType(FastNoiseLite::FractalType_FBm);
-    this->noise.SetFractalOctaves(5);
-    this->noise.SetFractalLacunarity(2.0f);
-    this->noise.SetFractalGain(0.5f);
-    this->noise.SetFractalWeightedStrength(0.0f);
-    largeNoise.SetNoiseType(FastNoiseLite::NoiseType_Perlin);
-    largeNoise.SetSeed(0);
-    largeNoise.SetFrequency(0.002f);
-}
-
-float Chunk::calcNoise(float x, float z) {
-    float worldX = x + this->X;
-    float worldZ = z + this->Z;     
-    float currentNoise = this->noise.GetNoise(worldX, worldZ);
-    float plusNoise = largeNoise.GetNoise(worldX, worldZ);
-    plusNoise *= 200.0f;
-    currentNoise *= 10.0f;
-    currentNoise = currentNoise * currentNoise * currentNoise;
-    currentNoise -= (std::sin(worldX) * std::cos(worldZ)) * (currentNoise / 70);
-    currentNoise += plusNoise;
-    return currentNoise;
-}
-
 float Chunk::calcNoiseAbsolute(float x, float z) {
-    float currentNoise = noise.GetNoise(x, z);
-    float plusNoise = largeNoise.GetNoise(x, z);
-    plusNoise *= 200.0f;
-    currentNoise *= 10.0f;
-    currentNoise = currentNoise * currentNoise * currentNoise;
-    currentNoise -= (std::sin(x) * std::cos(z)) * (currentNoise / 70);
-    currentNoise += plusNoise;
-    return currentNoise;
+    return 0;
 }
 
 void Chunk::create(float X, float Y, float Z) {
@@ -204,11 +214,46 @@ void Chunk::create(float X, float Y, float Z) {
         this->empty = true;
         //35 chunks: 15.783    PB: 15.783
         //12 chunks: 6.905     PB: 6.905
+
+        /*auto subChunk = chunksSearch.find(glm::vec3(X, Y - 32, Z));
+        if(subChunk != chunksSearch.end()){
+            unsigned int subIndex = subChunk->second;
+            std::shared_ptr<Chunk> chunkPtr = chunks.get(subIndex);
+            if (chunkPtr){
+                if(chunkPtr->empty){
+                    this->solid = false;
+                    this->empty = true;
+                    return;
+                }
+                
+            }
+        }
+        auto upperChunk = chunksSearch.find(glm::vec3(X, Y + 32, Z));
+        if(upperChunk != chunksSearch.end()){
+            unsigned int upperIndex = upperChunk->second;
+            std::shared_ptr<Chunk> chunkPtr = chunks.get(upperIndex);
+            if (chunkPtr){
+                if(chunkPtr->solid){
+                    this->solid = true;
+                    this->empty = false;
+                    return;
+                }
+                
+            }
+        }*/
+
         distanceI = neighborDistanceI(X, Y, Z);
-        
+        auto noiseKey = noiseSearch.find(glm::vec2(X, Z));
+
+        if(noiseKey == noiseSearch.end()){
+            noiseSearch[glm::vec2(X, Z)];
+            finalNode->GenUniformGrid2D(noiseSearch[glm::vec2(X, Z)], X, Z, 32.f, 32.f, 1.f, 1.f, 1);
+            noiseKey = noiseSearch.find(glm::vec2(X, Z));
+        }
+
         for (int z = 0; z < widths; z++) {
             for (int x = 0; x < widths; x++) {
-                float currentNoise = calcNoise(x, z);
+                float currentNoise = noiseKey->second[z * 32 + x];
                 int surfaceY = std::max(-1, std::min(int(widths), (int)std::floor(currentNoise - Y)));
                 heightMap[x][z] = (char)surfaceY;
                 if (surfaceY >= 0) empty = false;
@@ -379,46 +424,46 @@ void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
     this->vertices.clear();
     std::shared_ptr<Chunk> chunkPtr = chunks.get(chunksIndex);
     if (!chunkPtr) return;
-    if(chunksSearch.find(glm::vec3(chunkX - 40, chunkY, chunkZ)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX - 40, chunkY, chunkZ);
+    if(chunksSearch.find(glm::vec3(chunkX - 32, chunkY, chunkZ)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX - 32, chunkY, chunkZ);
 		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX - 40, chunkY, chunkZ)] = chunks.size() - 1;
+		chunksSearch[glm::vec3(chunkX - 32, chunkY, chunkZ)] = chunks.size() - 1;
         chunksLeftIndex = chunks.size() - 1;
 	}else{
-        chunksLeftIndex = chunksSearch.at(glm::vec3(chunkX - 40, chunkY, chunkZ));
+        chunksLeftIndex = chunksSearch.at(glm::vec3(chunkX - 32, chunkY, chunkZ));
     }
     std::shared_ptr<Chunk> chunkLeftPtr = chunks.get(chunksLeftIndex);
     if (!chunkLeftPtr) return;
 
-    if(chunksSearch.find(glm::vec3(chunkX + 40, chunkY, chunkZ)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX + 40, chunkY, chunkZ);
+    if(chunksSearch.find(glm::vec3(chunkX + 32, chunkY, chunkZ)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX + 32, chunkY, chunkZ);
 		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX + 40, chunkY, chunkZ)] = chunks.size() - 1;
+		chunksSearch[glm::vec3(chunkX + 32, chunkY, chunkZ)] = chunks.size() - 1;
         chunksRightIndex = chunks.size() - 1;
 	}else{
-        chunksRightIndex = chunksSearch.at(glm::vec3(chunkX + 40, chunkY, chunkZ));
+        chunksRightIndex = chunksSearch.at(glm::vec3(chunkX + 32, chunkY, chunkZ));
     }
     std::shared_ptr<Chunk> chunkRightPtr = chunks.get(chunksRightIndex);
     if (!chunkRightPtr) return;
 
-    if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ - 40)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ - 40);
+    if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ - 32)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ - 32);
 		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ - 40)] = chunks.size() - 1;
+		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ - 32)] = chunks.size() - 1;
         chunksBackIndex = chunks.size() - 1;
 	}else{
-        chunksBackIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ - 40));
+        chunksBackIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ - 32));
     }
     std::shared_ptr<Chunk> chunkBackPtr = chunks.get(chunksBackIndex);
     if (!chunkBackPtr) return;
 
-     if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ + 40)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ + 40);
+     if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ + 32)) == chunksSearch.end()){
+		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ + 32);
 		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ + 40)] = chunks.size() - 1;
+		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ + 32)] = chunks.size() - 1;
         chunksFrontIndex = chunks.size() - 1;
 	}else{
-        chunksFrontIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ + 40));
+        chunksFrontIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ + 32));
     }
     std::shared_ptr<Chunk> chunkFrontPtr = chunks.get(chunksFrontIndex);
     if (!chunkFrontPtr) return;
@@ -438,21 +483,22 @@ void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
     this->Y = chunk.Y;
     this->Z = chunk.Z;
     this->distanceI = chunk.distanceI;
+    auto noiseKey = noiseSearch.find(glm::vec2(X, Z));
     std::vector<unsigned int> verticesTemp;
     for (int z = 0; z < chunk.widths; z += this->distanceI) {
         for (int x = 0; x < chunk.widths; x += this->distanceI) {
             int y = (int)chunk.heightMap[x][z];
             if (y >= 0) y = (y / distanceI) * distanceI;
 
-            int yNegX = x - distanceI < 0 ? (int)leftChunk.heightMap[40 - distanceI][z] : (int)chunk.heightMap[x - distanceI][z];
-            int yPosX = x + distanceI > 39 ? (int)rightChunk.heightMap[x + distanceI - chunk.widths][z] : (int)chunk.heightMap[x + distanceI][z];
-            int yNegZ = z - distanceI < 0 ? (int)backChunk.heightMap[x][40 - distanceI] : (int)chunk.heightMap[x][z - distanceI];
-            int yPosZ = z + distanceI > 39 ? (int)frontChunk.heightMap[x][z + distanceI - chunk.widths] : (int)chunk.heightMap[x][z + distanceI];
+            int yNegX = x - distanceI < 0 ? (int)leftChunk.heightMap[32 - distanceI][z] : (int)chunk.heightMap[x - distanceI][z];
+            int yPosX = x + distanceI > 31 ? (int)rightChunk.heightMap[x + distanceI - chunk.widths][z] : (int)chunk.heightMap[x + distanceI][z];
+            int yNegZ = z - distanceI < 0 ? (int)backChunk.heightMap[x][32 - distanceI] : (int)chunk.heightMap[x][z - distanceI];
+            int yPosZ = z + distanceI > 31 ? (int)frontChunk.heightMap[x][z + distanceI - chunk.widths] : (int)chunk.heightMap[x][z + distanceI];
             
             int leftDist = x - distanceI < 0 ? leftChunk.distanceI : distanceI;
-            int rightDist = x + distanceI > 39 ? rightChunk.distanceI : distanceI;
+            int rightDist = x + distanceI > 31 ? rightChunk.distanceI : distanceI;
             int backDist = z - distanceI < 0 ? backChunk.distanceI : distanceI;
-            int frontDist = z + distanceI > 39 ? frontChunk.distanceI : distanceI;
+            int frontDist = z + distanceI > 31 ? frontChunk.distanceI : distanceI;
 
             if (yNegX >= 0) yNegX = (yNegX / leftDist) * leftDist;
             if (yPosX >= 0) yPosX = (yPosX / rightDist) * rightDist;
@@ -476,7 +522,7 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
             // y-min (face 0)
             // y-max (face 1)
             
-            if(y != 40){
+            if(y != 32){
                 current = 2; //grass
                 addVertices(1);
                 if(y > yNegX) addVertices(2);
@@ -502,7 +548,7 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
                 }
             }else{
                 y-=distanceI;
-                int currentHeight = std::floor(chunk.calcNoise(x, z));
+                int currentHeight = std::floor(noiseKey->second[z * 32 + x]);
                 if(currentHeight - (Y + chunk.widths) == 0){
                     current = 3; //dirt
                     if(y > yNegX) addVertices(2);

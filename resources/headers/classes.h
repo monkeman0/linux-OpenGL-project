@@ -7,7 +7,7 @@
 #include <fstream>
 #include <sstream>
 #include <glm/gtc/type_ptr.hpp>
-#include "FastNoiseLite.h"
+#include <FastNoise/FastNoise.h>
 #include "inputHandler.cpp"
 #include <bitset>
 #include <map>
@@ -91,28 +91,25 @@ private:
 
 class Chunk {
 public:
-    static const short widths = 40;
-    char heightMap[40][40];
+    static const short widths = 32;
+    char heightMap[32][32] = { '0' };
     bool empty = true;
     bool solid = true;
     float X = 0;
     float Y = 0;
     float Z = 0;
     short distanceI = 1;
-    FastNoiseLite noise;
-    FastNoiseLite largeNoise;
     mutable std::mutex chunkMtx;
     bool usedMesh = false;
     unsigned int meshIndex = 0;
 
     Chunk();
     Chunk(float X, float Y, float Z);
-    void initialNoiseSet();
-    float calcNoise(float x, float z);
     float calcNoiseAbsolute(float x, float z);
     void create(float X, float Y, float Z);
     short neighborDistanceI(float chunkX, float chunkY, float chunkZ);
     void clearAndShrink();
+    static void noiseInit();
     ~Chunk();
 private:
 

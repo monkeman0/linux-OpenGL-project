@@ -13,9 +13,9 @@ vec3 toReturn = vec3(0.0f, 0.0f, 0.0f);
 if (returnType == 0) {
 	uint index = data >> 16 & 65535u;
 	uint corner = data & 7u;
-	float y = float(index / (40u * 40u)) + (0.5f * LODstep);
-	float z = float((index / 40u) % 40u) + (0.5f * LODstep);
-	float x = float(index % 40u) + (0.5f * LODstep);
+	float y = float(index / (32u * 32u)) + (0.5f * LODstep);
+	float z = float((index / 32u) % 32u) + (0.5f * LODstep);
+	float x = float(index % 32u) + (0.5f * LODstep);
 	switch (corner) {
 	case 0u:{
 		x -= 0.5f * LODstep;
