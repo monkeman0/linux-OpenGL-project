@@ -156,44 +156,28 @@ Chunk::Chunk() {}
 
 void Chunk::noiseInit(){
     auto superSimplex = FastNoise::New<FastNoise::SuperSimplex>();
-    superSimplex->SetOutputMin(-2.0f);
+    superSimplex->SetOutputMin(-2.f);
     superSimplex->SetOutputMax(5.f);
-    superSimplex->SetScale(300.f);
-    auto mult1 = FastNoise::New<FastNoise::Multiply>();
-    mult1->SetLHS(superSimplex);
-    mult1->SetRHS(4.f);
+    superSimplex->SetScale(800.f);
     auto fractal = FastNoise::New<FastNoise::FractalFBm>();
     fractal->SetSource(superSimplex);
-    fractal->SetGain(-0.48f);
-    fractal->SetLacunarity(2.f);
-    fractal->SetOctaveCount(5);
-    fractal->SetWeightedStrength(-0.36f);
-    auto Msmooth = FastNoise::New<FastNoise::MaxSmooth>();
-    Msmooth->SetLHS(fractal);
-    Msmooth->SetRHS(-1.54);
-    Msmooth->SetSmoothness(8.52f);
-    auto mult2 = FastNoise::New<FastNoise::Multiply>();
-    mult2->SetLHS(Msmooth);
-    mult2->SetRHS(1.7f);
+    fractal->SetGain(-0.6f);
+    fractal->SetLacunarity(3.f);
+    fractal->SetOctaveCount(4);
+    fractal->SetWeightedStrength(-0.5f);//-0.36f
+    auto max = FastNoise::New<FastNoise::Max>();
+    max->SetLHS(fractal);
+    max->SetRHS(-1.54);
     auto pow = FastNoise::New<FastNoise::PowInt>();
-    pow->SetValue(mult2);
-    pow->SetPow(2);
-    auto sub = FastNoise::New<FastNoise::Subtract>();
-    sub->SetLHS(pow);
-    sub->SetRHS(10.f);
-    auto mult3 = FastNoise::New<FastNoise::Multiply>();
-    mult3->SetLHS(sub);
-    mult3->SetRHS(1.5f); 
-
+    pow->SetValue(max);
+    pow->SetPow(3);
+    
     auto mult4 = FastNoise::New<FastNoise::Multiply>();
-    mult4->SetLHS(mult1);
-    mult4->SetRHS(30.f);
-    auto scale = FastNoise::New<FastNoise::DomainScale>();
-    scale->SetSource(mult4);
-    scale->SetScaling(0.2f);
+    mult4->SetLHS(superSimplex);
+    mult4->SetRHS(40.f);
     auto finalCombine = FastNoise::New<FastNoise::Add>();
-    finalCombine->SetLHS(mult3);
-    finalCombine->SetRHS(scale);
+    finalCombine->SetLHS(mult4);
+    finalCombine->SetRHS(pow);
 
     finalNode->SetSource(finalCombine);
 }
@@ -215,7 +199,7 @@ void Chunk::create(float X, float Y, float Z) {
         //35 chunks: 15.783    PB: 15.783
         //12 chunks: 6.905     PB: 6.905
 
-        /*auto subChunk = chunksSearch.find(glm::vec3(X, Y - 32, Z));
+        auto subChunk = chunksSearch.find(glm::vec3(X, Y - 32, Z));
         if(subChunk != chunksSearch.end()){
             unsigned int subIndex = subChunk->second;
             std::shared_ptr<Chunk> chunkPtr = chunks.get(subIndex);
@@ -240,20 +224,18 @@ void Chunk::create(float X, float Y, float Z) {
                 }
                 
             }
-        }*/
+        }
 
         distanceI = neighborDistanceI(X, Y, Z);
-        auto noiseKey = noiseSearch.find(glm::vec2(X, Z));
-
-        if(noiseKey == noiseSearch.end()){
-            noiseSearch[glm::vec2(X, Z)];
-            finalNode->GenUniformGrid2D(noiseSearch[glm::vec2(X, Z)], X, Z, 32.f, 32.f, 1.f, 1.f, 1);
-            noiseKey = noiseSearch.find(glm::vec2(X, Z));
+        auto [it, inserted] = noiseSearch.try_emplace(glm::vec2(X, Z));
+        if (inserted) {
+            finalNode->GenUniformGrid2D(it->second, X, Z, 32.f, 32.f, 1.f, 1.f, 1);
         }
+        auto& noiseData = it->second;
 
         for (int z = 0; z < widths; z++) {
             for (int x = 0; x < widths; x++) {
-                float currentNoise = noiseKey->second[z * 32 + x];
+                float currentNoise = noiseData[z * 32 + x];
                 int surfaceY = std::max(-1, std::min(int(widths), (int)std::floor(currentNoise - Y)));
                 heightMap[x][z] = (char)surfaceY;
                 if (surfaceY >= 0) empty = false;
@@ -263,9 +245,19 @@ void Chunk::create(float X, float Y, float Z) {
 }
 
 short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ) {
-    short neighborDistance = trunc(sqrt(((chunkX) - generatePos.x) * ((chunkX) - generatePos.x) + ((chunkY) - generatePos.y) * ((chunkY) - generatePos.y) + ((chunkZ) - generatePos.z) * ((chunkZ) - generatePos.z))) / 200;
-    if (neighborDistance > 14) neighborDistance = 14;
-    return distanceIncriment[neighborDistance];
+    float dx = chunkX - generatePos.x;
+    float dy = chunkY - generatePos.y;
+    float dz = chunkZ - generatePos.z;
+    float distSq = dx*dx + dy*dy + dz*dz;
+    // Pre-compute thresholds as: (i * 200)^2 for i in 0..14
+    static const float thresholdsSq[] = {
+        0, 40000, 160000, 360000, 640000, 1000000,
+        1440000, 1960000, 2560000, 3240000, 4000000,
+        4840000, 5760000, 6760000, 7840000
+    };
+    short idx = 0;
+    while (idx < 14 && distSq >= thresholdsSq[idx + 1]) idx++;
+    return distanceIncriment[idx];
 }
 
 Chunk::~Chunk(){}
@@ -424,46 +416,47 @@ void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
     this->vertices.clear();
     std::shared_ptr<Chunk> chunkPtr = chunks.get(chunksIndex);
     if (!chunkPtr) return;
-    if(chunksSearch.find(glm::vec3(chunkX - 32, chunkY, chunkZ)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX - 32, chunkY, chunkZ);
-		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX - 32, chunkY, chunkZ)] = chunks.size() - 1;
-        chunksLeftIndex = chunks.size() - 1;
-	}else{
-        chunksLeftIndex = chunksSearch.at(glm::vec3(chunkX - 32, chunkY, chunkZ));
+
+    auto [it, inserted] = chunksSearch.try_emplace(glm::vec3(chunkX - 32, chunkY, chunkZ));
+    if (inserted) {
+        auto newChunk = std::make_shared<Chunk>(chunkX - 32, chunkY, chunkZ);
+        chunksLeftIndex = chunks.push_back_and_index(newChunk);
+        it->second = chunksLeftIndex;
+    }else{
+        chunksLeftIndex = it->second;
     }
     std::shared_ptr<Chunk> chunkLeftPtr = chunks.get(chunksLeftIndex);
     if (!chunkLeftPtr) return;
 
-    if(chunksSearch.find(glm::vec3(chunkX + 32, chunkY, chunkZ)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX + 32, chunkY, chunkZ);
-		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX + 32, chunkY, chunkZ)] = chunks.size() - 1;
-        chunksRightIndex = chunks.size() - 1;
-	}else{
-        chunksRightIndex = chunksSearch.at(glm::vec3(chunkX + 32, chunkY, chunkZ));
+    auto [it2, inserted2] = chunksSearch.try_emplace(glm::vec3(chunkX + 32, chunkY, chunkZ));
+    if (inserted2) {
+        auto newChunk = std::make_shared<Chunk>(chunkX + 32, chunkY, chunkZ);
+        chunksRightIndex = chunks.push_back_and_index(newChunk);
+        it2->second = chunksRightIndex;
+    }else{
+        chunksRightIndex = it2->second;
     }
     std::shared_ptr<Chunk> chunkRightPtr = chunks.get(chunksRightIndex);
     if (!chunkRightPtr) return;
 
-    if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ - 32)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ - 32);
-		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ - 32)] = chunks.size() - 1;
-        chunksBackIndex = chunks.size() - 1;
-	}else{
-        chunksBackIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ - 32));
+    auto [it3, inserted3] = chunksSearch.try_emplace(glm::vec3(chunkX, chunkY, chunkZ - 32));
+    if (inserted3) {
+        auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ - 32);
+        chunksBackIndex = chunks.push_back_and_index(newChunk);
+        it3->second = chunksBackIndex;
+    }else{
+        chunksBackIndex = it3->second;
     }
     std::shared_ptr<Chunk> chunkBackPtr = chunks.get(chunksBackIndex);
     if (!chunkBackPtr) return;
 
-     if(chunksSearch.find(glm::vec3(chunkX, chunkY, chunkZ + 32)) == chunksSearch.end()){
-		auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ + 32);
-		chunks.push_back(newChunk);
-		chunksSearch[glm::vec3(chunkX, chunkY, chunkZ + 32)] = chunks.size() - 1;
-        chunksFrontIndex = chunks.size() - 1;
-	}else{
-        chunksFrontIndex = chunksSearch.at(glm::vec3(chunkX, chunkY, chunkZ + 32));
+    auto [it4, inserted4] = chunksSearch.try_emplace(glm::vec3(chunkX, chunkY, chunkZ + 32));
+    if (inserted4) {
+        auto newChunk = std::make_shared<Chunk>(chunkX, chunkY, chunkZ + 32);
+        chunksFrontIndex = chunks.push_back_and_index(newChunk);
+        it4->second = chunksFrontIndex;
+    }else{
+        chunksFrontIndex = it4->second;
     }
     std::shared_ptr<Chunk> chunkFrontPtr = chunks.get(chunksFrontIndex);
     if (!chunkFrontPtr) return;

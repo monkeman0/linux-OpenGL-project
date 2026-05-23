@@ -181,7 +181,7 @@ bool active = false;
 bool joinableThreads[1] = { true };
 std::thread worker1(chunker1);
 
-Camera camera(glm::vec3(0, 0, 0));
+Camera camera(glm::vec3(150, 50, -1000));
 float lastX = 800.0f / 2.0f;
 float lastY = 800.0f / 2.0f;
 bool firstMouse = true;
@@ -385,11 +385,18 @@ int main() {
 	ImGui_ImplOpenGL3_Init("#version 460 core");
 
 	if (extraThreads < 1) joinableThreads[0] = false;
+
+#ifdef _WIN32
+	MEMORYSTATUSEX memStatus;
+	memStatus.dwlength = sizeof(memStatus);
+	if(GlobalMemoryStatusEx(&memStatus)) totalRam = static_cast<size_t>(memStatus.ullTotalPhys / (1024 * 1024));
+#else
 	size_t totalRam = 0;
 	{
 		struct sysinfo si;
 		if (sysinfo(&si) == 0) totalRam = (si.totalram * si.mem_unit) / (1024 * 1024);
 	}
+#endif
 
 	//initialize fonts and openGL settings
 	//glEnable(GL_MULTISAMPLE);
@@ -1137,8 +1144,6 @@ int main() {
 		get_used_ram();
 		ImGui::Text("Memory used in MB: %llu, GB: %llu", (unsigned long long)rss.load(), (unsigned long long)(rss.load() / 1024));
 		ImGui::Text("free RAM in MB: %llu, GB: %llu", (unsigned long long)freeRam.load(), (unsigned long long)(freeRam.load()/1024));
-		ImGui::Text("frustum debug on: %d", debug.showFrustum);
-
 		ImGui::SliderFloat("Render Distance", &sliderTester1, 1, 100, "%.f", 0);
 
 		ImGui::End();
@@ -1177,6 +1182,7 @@ int main() {
 	debugShader.Delete();
 	horizontalBlurShader.Delete();
 	verticalBlurShader.Delete();
+	frustumShader.Delete();
 	glfwTerminate();
 	return 0;
 }

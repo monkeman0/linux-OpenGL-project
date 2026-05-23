@@ -169,6 +169,12 @@ public:
 		std::lock_guard<std::mutex> lock(vectorMtx);
 		data.shrink_to_fit();
 	}
+
+    size_t push_back_and_index(const std::shared_ptr<T>& value) {
+        std::lock_guard<std::mutex> lock(vectorMtx);
+        data.push_back(value);
+        return data.size() - 1;
+    }
 };
 
 #endif
