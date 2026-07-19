@@ -155,31 +155,34 @@ Texture::Texture(const char* texturePaths[], short int textureNumber, GLint inte
 Chunk::Chunk() {}
 
 void Chunk::noiseInit(){
-    auto superSimplex = FastNoise::New<FastNoise::SuperSimplex>();
-    superSimplex->SetOutputMin(-2.f);
-    superSimplex->SetOutputMax(5.f);
-    superSimplex->SetScale(800.f);
-    auto fractal = FastNoise::New<FastNoise::FractalFBm>();
-    fractal->SetSource(superSimplex);
-    fractal->SetGain(-0.6f);
-    fractal->SetLacunarity(3.f);
-    fractal->SetOctaveCount(4);
-    fractal->SetWeightedStrength(-0.5f);//-0.36f
-    auto max = FastNoise::New<FastNoise::Max>();
-    max->SetLHS(fractal);
-    max->SetRHS(-1.54);
-    auto pow = FastNoise::New<FastNoise::PowInt>();
-    pow->SetValue(max);
-    pow->SetPow(3);
-    
-    auto mult4 = FastNoise::New<FastNoise::Multiply>();
-    mult4->SetLHS(superSimplex);
-    mult4->SetRHS(40.f);
-    auto finalCombine = FastNoise::New<FastNoise::Add>();
-    finalCombine->SetLHS(mult4);
-    finalCombine->SetRHS(pow);
+    auto perlin = FastNoise::New<FastNoise::Perlin>();
+    perlin->SetOutputMin(-1.f);
+    perlin->SetOutputMax(1.f);
+    perlin->SetScale(3500.f);
 
-    finalNode->SetSource(finalCombine);
+    auto scale = FastNoise::New<FastNoise::DomainScale>();
+    scale->SetSource(perlin);
+    scale->SetScaling(5.06f);/*
+
+    auto fractalFBM = FastNoise::New<FastNoise::FractalFBm>();
+    fractalFBM->SetSource(scale);
+    fractalFBM->SetGain(0.6f);
+    fractalFBM->SetLacunarity(2.f);
+    fractalFBM->SetOctaveCount(5);
+    fractalFBM->SetWeightedStrength(1.f);
+
+    auto domainWarp = FastNoise::New<FastNoise::DomainWarpSimplex>();
+    domainWarp->SetSource(fractalFBM);
+    domainWarp->SetWarpAmplitude(12.7f);
+    domainWarp->SetScale(50.f);
+    domainWarp->SetAmplitudeScaling<FastNoise::Dim::X>(1.1f);
+    domainWarp->SetAmplitudeScaling<FastNoise::Dim::Y>(1.3f);
+
+    auto add2 = FastNoise::New<FastNoise::Subtract>();
+    add2->SetLHS(perlin);
+    add2->SetRHS(domainWarp);*/
+
+    finalNode->SetSource(scale);
 }
 
 Chunk::Chunk(float X, float Y, float Z) {
@@ -191,57 +194,103 @@ float Chunk::calcNoiseAbsolute(float x, float z) {
 }
 
 void Chunk::create(float X, float Y, float Z) {
-        this->X = X;
-        this->Y = Y;
-        this->Z = Z;
-        this->solid = true;
-        this->empty = true;
-        //35 chunks: 15.783    PB: 15.783
-        //12 chunks: 6.905     PB: 6.905
-
-        auto subChunk = chunksSearch.find(glm::vec3(X, Y - 32, Z));
-        if(subChunk != chunksSearch.end()){
-            unsigned int subIndex = subChunk->second;
-            std::shared_ptr<Chunk> chunkPtr = chunks.get(subIndex);
-            if (chunkPtr){
-                if(chunkPtr->empty){
-                    this->solid = false;
-                    this->empty = true;
-                    return;
+    this->X = X;
+    this->Y = Y;
+    this->Z = Z;
+    this->solid = true;
+    this->empty = true;
+    //35 chunks: 15.783    PB: 15.783
+    //12 chunks: 6.905     PB: 6.905
+    auto subChunk = chunksSearch.find(glm::vec3(X, Y - 32, Z));
+    if(subChunk != chunksSearch.end()){
+        unsigned int subIndex = subChunk->second;
+        std::shared_ptr<Chunk> chunkPtr = chunks.get(subIndex);
+        if (chunkPtr){
+            if(chunkPtr->empty){
+                this->solid = false;
+                this->empty = true;
+                for (int x = 0; x < 32; x++) {
+                    for (int z = 0; z < 32; z++) {
+                        heightMap[x][z] = -1; 
+                    }
                 }
-                
+                return;
             }
+            
         }
-        auto upperChunk = chunksSearch.find(glm::vec3(X, Y + 32, Z));
-        if(upperChunk != chunksSearch.end()){
-            unsigned int upperIndex = upperChunk->second;
-            std::shared_ptr<Chunk> chunkPtr = chunks.get(upperIndex);
-            if (chunkPtr){
-                if(chunkPtr->solid){
-                    this->solid = true;
-                    this->empty = false;
-                    return;
+    }
+    auto upperChunk = chunksSearch.find(glm::vec3(X, Y + 32, Z));
+    if(upperChunk != chunksSearch.end()){
+        unsigned int upperIndex = upperChunk->second;
+        std::shared_ptr<Chunk> chunkPtr = chunks.get(upperIndex);
+        if (chunkPtr){
+            if(chunkPtr->solid){
+                this->solid = true;
+                this->empty = false;
+                for (int x = 0; x < 32; x++) {
+                    for (int z = 0; z < 32; z++) {
+                        heightMap[x][z] = 32; 
+                    }
                 }
-                
+                return;
             }
+            
         }
+    }
+    distanceI = neighborDistanceI(X, Y, Z);
+    float roundX = std::floor(X / 64.0f) * 64.0f;
+    float roundZ = std::floor(Z / 64.0f) * 64.0f;
 
-        distanceI = neighborDistanceI(X, Y, Z);
-        auto [it, inserted] = noiseSearch.try_emplace(glm::vec2(X, Z));
-        if (inserted) {
-            finalNode->GenUniformGrid2D(it->second, X, Z, 32.f, 32.f, 1.f, 1.f, 1);
-        }
-        auto& noiseData = it->second;
+    auto [it, inserted] = noiseSearch.try_emplace(glm::vec2(roundX, roundZ));
+    if (inserted) {
+        finalNode->GenUniformGrid2D(it->second, roundX, roundZ, 9, 9, 8.f, 8.f, 1);
+    }
+    auto& noiseData = it->second;
 
-        for (int z = 0; z < widths; z++) {
-            for (int x = 0; x < widths; x++) {
-                float currentNoise = noiseData[z * 32 + x];
-                int surfaceY = std::max(-1, std::min(int(widths), (int)std::floor(currentNoise - Y)));
-                heightMap[x][z] = (char)surfaceY;
-                if (surfaceY >= 0) empty = false;
-                if (surfaceY < widths) solid = false;
-            }
+    float localX_start = X - roundX;
+    float localZ_start = Z - roundZ;
+
+    for (int z = 0; z < widths; z++) {
+        // Current global-to-regional coordinate for this specific vertex
+        float currentRegionZ = localZ_start + z;
+
+        // Find the bounding indices in the 8x8 noise grid (spacing is 8 units)
+        int z0 = std::min(8, static_cast<int>(std::floor(currentRegionZ / 8.0f)));
+        int z1 = std::min(8, z0 + 1);
+
+        // Calculate interpolation weight [0.0, 1.0] between z0 and z1
+        float tZ = (currentRegionZ / 8.0f) - z0;
+
+        for (int x = 0; x < widths; x++) {
+            float currentRegionX = localX_start + x;
+
+            int x0 = std::min(8, static_cast<int>(std::floor(currentRegionX / 8.0f)));
+            int x1 = std::min(8, x0 + 1);
+            float tX = (currentRegionX / 8.0f) - x0;
+
+            // Sample the 4 surrounding corners from the 8x8 noise data
+            float n00 = noiseData[z0 * 9 + x0]; // Top-Left
+            float n10 = noiseData[z0 * 9 + x1]; // Top-Right
+            float n01 = noiseData[z1 * 9 + x0]; // Bottom-Left
+            float n11 = noiseData[z1 * 9 + x1]; // Bottom-Right
+
+            // Bilinear interpolation
+            float noise0 = n00 + tX * (n10 - n00); // Interpolate top row
+            float noise1 = n01 + tX * (n11 - n01); // Interpolate bottom row
+            float interpolatedNoise = noise0 + tZ * (noise1 - noise0); // Blend rows together
+
+            float ridge = interpolatedNoise + 0.1f;
+            ridge -= 0.11f * std::clamp(ridge / 1.5f, -1.f, 1.f);
+
+            float currentNoise = std::abs((ridge * ridge * ridge) * 250.f);
+            int surfaceY = std::max(-1, std::min(int(widths), (int)std::floor(currentNoise - Y)));
+
+            heightMap[x][z] = (char)surfaceY;
+
+            if (surfaceY >= 0) empty = false;
+            if (surfaceY < widths) solid = false;
         }
+    }
 }
 
 short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ) {
@@ -252,7 +301,7 @@ short Chunk::neighborDistanceI(float chunkX, float chunkY, float chunkZ) {
     // Pre-compute thresholds as: (i * 200)^2 for i in 0..14
     static const float thresholdsSq[] = {
         0, 40000, 160000, 360000, 640000, 1000000,
-        1440000, 1960000, 2560000, 3240000, 4000000,
+        1440000, 1960000, 640000, 3240000, 4000000,
         4840000, 5760000, 6760000, 7840000
     };
     short idx = 0;
@@ -397,9 +446,12 @@ Mesh::~Mesh() {
 void Mesh::updateBuffers() {
     glBindVertexArray(this->VAO);
     glBindBuffer(GL_ARRAY_BUFFER, this->VBO);
-    glBufferData(GL_ARRAY_BUFFER, this->vertices.size() * sizeof(unsigned int), this->vertices.data(), GL_DYNAMIC_DRAW);
+    glBufferData(GL_ARRAY_BUFFER, this->pendingVertices.size() * sizeof(unsigned int), this->pendingVertices.data(), GL_DYNAMIC_DRAW);
     glVertexAttribIPointer(0, 1, GL_UNSIGNED_INT, sizeof(unsigned int), (void*)0);
     glEnableVertexAttribArray(0);
+    vertices = std::move(pendingVertices);
+    distanceI = pendingDistanceI;
+    pendingVertices.clear();
 }
 
 void Mesh::listItems(bool which) {
@@ -413,7 +465,6 @@ void Mesh::listItems(bool which) {
 }
 
 void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
-    this->vertices.clear();
     std::shared_ptr<Chunk> chunkPtr = chunks.get(chunksIndex);
     if (!chunkPtr) return;
 
@@ -475,23 +526,29 @@ void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
     this->X = chunk.X;
     this->Y = chunk.Y;
     this->Z = chunk.Z;
-    this->distanceI = chunk.distanceI;
-    auto noiseKey = noiseSearch.find(glm::vec2(X, Z));
-    std::vector<unsigned int> verticesTemp;
-    for (int z = 0; z < chunk.widths; z += this->distanceI) {
-        for (int x = 0; x < chunk.widths; x += this->distanceI) {
-            int y = (int)chunk.heightMap[x][z];
-            if (y >= 0) y = (y / distanceI) * distanceI;
 
-            int yNegX = x - distanceI < 0 ? (int)leftChunk.heightMap[32 - distanceI][z] : (int)chunk.heightMap[x - distanceI][z];
-            int yPosX = x + distanceI > 31 ? (int)rightChunk.heightMap[x + distanceI - chunk.widths][z] : (int)chunk.heightMap[x + distanceI][z];
-            int yNegZ = z - distanceI < 0 ? (int)backChunk.heightMap[x][32 - distanceI] : (int)chunk.heightMap[x][z - distanceI];
-            int yPosZ = z + distanceI > 31 ? (int)frontChunk.heightMap[x][z + distanceI - chunk.widths] : (int)chunk.heightMap[x][z + distanceI];
+    float roundX = std::floor(X / 64.0f) * 64.0f;
+    float roundZ = std::floor(Z / 64.0f) * 64.0f;
+    auto noiseKey = noiseSearch.find(glm::vec2(roundX, roundZ));
+
+    int localX = static_cast<int>(X - roundX);
+    int localZ = static_cast<int>(Z - roundZ);
+
+    std::vector<unsigned int> verticesTemp;
+    for (int z = 0; z < chunk.widths; z += this->pendingDistanceI) {
+        for (int x = 0; x < chunk.widths; x += this->pendingDistanceI) {
+            int y = (int)chunk.heightMap[x][z];
+            if (y >= 0) y = (y / pendingDistanceI) * pendingDistanceI;
+
+            int yNegX = x - pendingDistanceI < 0 ? (int)leftChunk.heightMap[32 - pendingDistanceI][z] : (int)chunk.heightMap[x - pendingDistanceI][z];
+            int yPosX = x + pendingDistanceI > 31 ? (int)rightChunk.heightMap[x + pendingDistanceI - chunk.widths][z] : (int)chunk.heightMap[x + pendingDistanceI][z];
+            int yNegZ = z - pendingDistanceI < 0 ? (int)backChunk.heightMap[x][32 - pendingDistanceI] : (int)chunk.heightMap[x][z - pendingDistanceI];
+            int yPosZ = z + pendingDistanceI > 31 ? (int)frontChunk.heightMap[x][z + pendingDistanceI - chunk.widths] : (int)chunk.heightMap[x][z + pendingDistanceI];
             
-            int leftDist = x - distanceI < 0 ? leftChunk.distanceI : distanceI;
-            int rightDist = x + distanceI > 31 ? rightChunk.distanceI : distanceI;
-            int backDist = z - distanceI < 0 ? backChunk.distanceI : distanceI;
-            int frontDist = z + distanceI > 31 ? frontChunk.distanceI : distanceI;
+            int leftDist = x - pendingDistanceI < 0 ? leftChunk.distanceI : pendingDistanceI;
+            int rightDist = x + pendingDistanceI > 31 ? rightChunk.distanceI : pendingDistanceI;
+            int backDist = z - pendingDistanceI < 0 ? backChunk.distanceI : pendingDistanceI;
+            int frontDist = z + pendingDistanceI > 31 ? frontChunk.distanceI : pendingDistanceI;
 
             if (yNegX >= 0) yNegX = (yNegX / leftDist) * leftDist;
             if (yPosX >= 0) yPosX = (yPosX / rightDist) * rightDist;
@@ -499,10 +556,10 @@ void Mesh::fillChunk(float chunkX, float chunkY, float chunkZ) {
             if (yPosZ >= 0) yPosZ = (yPosZ / frontDist) * frontDist;
 
             if(y >= 0){
-            if(leftChunk.distanceI < distanceI && x == 0) yNegX-=leftChunk.distanceI;
-            if(rightChunk.distanceI < distanceI && x == chunk.widths - distanceI) yPosX-=rightChunk.distanceI;
-            if(backChunk.distanceI < distanceI && z == 0) yNegZ-=backChunk.distanceI;
-            if(frontChunk.distanceI < distanceI && z == chunk.widths - distanceI) yPosZ-=frontChunk.distanceI;
+            if(leftChunk.distanceI < pendingDistanceI && x == 0) yNegX-=leftChunk.distanceI;
+            if(rightChunk.distanceI < pendingDistanceI && x == chunk.widths - pendingDistanceI) yPosX-=rightChunk.distanceI;
+            if(backChunk.distanceI < pendingDistanceI && z == 0) yNegZ-=backChunk.distanceI;
+            if(frontChunk.distanceI < pendingDistanceI && z == chunk.widths - pendingDistanceI) yPosZ-=frontChunk.distanceI;
             unsigned int current = 0;
 
 #define addVertices(exposed)\
@@ -522,14 +579,14 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
                 if(y > yPosX) addVertices(3);
                 if(y > yNegZ) addVertices(4);
                 if(y > yPosZ) addVertices(5);
-                y-=distanceI;
+                y-=pendingDistanceI;
                 if(y < 0) continue;
                 current = 3; //dirt
                 if(y > yNegX) addVertices(2);
                 if(y > yPosX) addVertices(3);
                 if(y > yNegZ) addVertices(4);
                 if(y > yPosZ) addVertices(5);
-                y-=distanceI;
+                y-=pendingDistanceI;
                 if(y < 0) continue;
                 while(y >= 0){
                     current = 1; //stone
@@ -537,18 +594,50 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
                     if(y > yPosX) addVertices(3);
                     if(y > yNegZ) addVertices(4);
                     if(y > yPosZ) addVertices(5);
-                    y-=distanceI;
+                    y-=pendingDistanceI;
                 }
             }else{
-                y-=distanceI;
-                int currentHeight = std::floor(noiseKey->second[z * 32 + x]);
+                y-=pendingDistanceI;
+                int currentHeight = 0;
+                if (noiseKey != noiseSearch.end()) {
+                    auto& noiseData = noiseKey->second;
+                    int localX = static_cast<int>(X - roundX); 
+                    int localZ = static_cast<int>(Z - roundZ);
+
+                    // Calculate current regional coordinate for this specific vertex loop step
+                    float currentRegionX = static_cast<float>(localX + x);
+                    float currentRegionZ = static_cast<float>(localZ + z);
+
+                    // Find bounding indices in the 9x9 noise grid (spacing is 8 units)
+                    int x0 = std::min(8, static_cast<int>(std::floor(currentRegionX / 8.0f)));
+                    int x1 = std::min(8, x0 + 1);
+                    float tX = (currentRegionX / 8.0f) - x0;
+
+                    int z0 = std::min(8, static_cast<int>(std::floor(currentRegionZ / 8.0f)));
+                    int z1 = std::min(8, z0 + 1);
+                    float tZ = (currentRegionZ / 8.0f) - z0;
+
+                    // Sample the 4 surrounding corners from the 9x9 grid
+                    float n00 = noiseData[z0 * 9 + x0]; 
+                    float n10 = noiseData[z0 * 9 + x1]; 
+                    float n01 = noiseData[z1 * 9 + x0]; 
+                    float n11 = noiseData[z1 * 9 + x1]; 
+
+                    // Perform bilinear interpolation
+                    float noise0 = n00 + tX * (n10 - n00); 
+                    float noise1 = n01 + tX * (n11 - n01); 
+                    float interpolatedNoise = noise0 + tZ * (noise1 - noise0);
+
+                    // Replace your old "int currentHeight = std::floor(noiseKey->second[regionRowOffset]);" with this:
+                    int currentHeight = std::floor(interpolatedNoise);
+                }
                 if(currentHeight - (Y + chunk.widths) == 0){
                     current = 3; //dirt
                     if(y > yNegX) addVertices(2);
                     if(y > yPosX) addVertices(3);
                     if(y > yNegZ) addVertices(4);
                     if(y > yPosZ) addVertices(5);
-                    y-=distanceI;
+                    y-=pendingDistanceI;
                 }
                 current = 1; //stone
                 while(y >= 0){
@@ -556,13 +645,14 @@ for (unsigned int i = (6 * exposed); i < (6 * exposed) + 6; i++) {\
                     if(y > yPosX) addVertices(3);
                     if(y > yNegZ) addVertices(4);
                     if(y > yPosZ) addVertices(5);
-                    y-=distanceI;
+                    y-=pendingDistanceI;
                 }
             }    
             } //y >= 0
         }
     }
-    this->vertices = verticesTemp;
+
+    this->pendingVertices = std::move(verticesTemp);
 }
 
 void Mesh::clearAndShrink() {

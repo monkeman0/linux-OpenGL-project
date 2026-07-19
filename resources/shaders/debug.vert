@@ -6,7 +6,7 @@ out vec2 TexCoord;
 
 uniform mat4 pv;
 uniform mat4 model;
-uniform bool skipped;
+uniform int skipped;
 
 void main()
 {
@@ -33,7 +33,7 @@ void main()
 	default: break;
 	}
 
-	if(skipped) pos*=0.9f;
+	if(skipped != 0) pos*=0.9f;
 
     gl_Position = pv * model * vec4(pos, 1.0);
 }

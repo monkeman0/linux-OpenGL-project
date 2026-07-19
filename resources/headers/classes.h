@@ -18,8 +18,6 @@
 class Chunk;
 template <typename T>
 class ThreadSafeVector;
-extern int totalChunksGenerated;
-extern float bytesFromMeshes;
 extern ThreadSafeVector<Chunk> chunks;
 extern std::atomic<bool> clearingChunks;
 extern Input input;
@@ -75,6 +73,8 @@ public:
     mutable std::mutex meshMtx;
     bool readable = false;
     bool LODborder = false;
+    decltype(vertices) pendingVertices = vertices;
+    short pendingDistanceI = 0;
 
     Mesh();
     void init();

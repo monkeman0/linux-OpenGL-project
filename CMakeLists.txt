@@ -16,6 +16,7 @@ add_executable(linux_opengl_hope
     src/stb_image.cpp
     src/classes.cpp
     src/tileHandling.cpp
+    src/node.cpp
     resources/data/naturalTiles.cpp
     resources/libraries/imgui/imgui_draw.cpp
     resources/libraries/imgui/imgui_tables.cpp

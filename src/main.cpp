@@ -13,6 +13,7 @@
 #include <atomic>
 #include <filesystem>
 #include <ios>
+#include <unordered_set>
 #ifdef _WIN32
 #   include <windows.h>
 #   include <psapi.h>        // GetProcessMemoryInfo
@@ -48,7 +49,7 @@ inline void trim_heap() {
 std::mutex realMeshesQueueMutex;
 std::condition_variable realMeshesQueueCV;
 
-float sliderTester1 = 45;
+float sliderTester1 = 11;
 float sliderTester2 = 32;
 float sliderTester3 = 0.f;
 float t1, t2, t3, t4, t5 = 0.f;
@@ -59,12 +60,13 @@ int startingWindow_height = 0;
 unsigned int bytesFromChunks = 0;
 std::mutex chunksSearchMutex;
 
+//#include "node.cpp"
 #include "tileHandling.h"
 #include "classes.h"
 #include "cameraClass.h"
 
 std::unordered_map<glm::vec3, unsigned int> chunksSearch;
-std::unordered_map<glm::vec2, float[32*32]> noiseSearch;
+std::unordered_map<glm::vec2, float[9*9]> noiseSearch;
 
 double pi = 3.141592653589793;
 float deltaTime = 0.0f;
@@ -170,10 +172,9 @@ void get_used_ram();
 ThreadSafeVector<Chunk> chunks;
 ThreadSafeVector<Mesh> meshes;
 
-int totalChunks = 0;
+int renderRadius = 0;
 std::atomic<bool> generate{false};
 std::atomic<bool> worker1Finished{true};
-unsigned int completedChunks = 0;
 std::atomic<bool> clearingChunks{false};
 std::queue<unsigned int> realMeshesQueue;
 
@@ -693,6 +694,12 @@ int main() {
 	Frustum frus;
 	bool frustumDebugReady = false;
 
+	// Trigger initial chunk generation immediately
+	generatePos = glm::vec3(round(camera.Position.x / 32) * 32.0f, round(camera.Position.y / 32) * 32.0f, round(camera.Position.z / 32) * 32.0f);
+	renderRadius    = static_cast<int>(sliderTester1);
+	worker1Finished = false;
+	makeChunksOrder = true;
+
 	while (!glfwWindowShouldClose(window)) {
 
 		//get input changed bools ready to recieve input
@@ -717,10 +724,6 @@ int main() {
 		camera.updateCameraVectors();
 
 		glm::vec3 newPos = glm::vec3(round(camera.Position.x / 32) * 32.0f, round(camera.Position.y / 32) * 32.0f, round(camera.Position.z / 32) * 32.0f);
-
-		if (newPos != prevPos) {
-
-		} //loadNewChunks(sliderTester1, newPos);
 		glm::mat4 model = glm::mat4(1.0f);
 		glm::mat4 view = camera.GetViewMatrix();
 
@@ -761,10 +764,12 @@ int main() {
 					AABB check(glm::vec3(16.0f, 16.0f, 16.0f), 16.0f, 16.0f, 16.0f);
 
 		            if (check.isOnFrustum(frus, chunkTransform)) {
-						if(chunk->solid || chunk->empty){
-							debugShader.setBool("skipped", true);
+						if(chunk->solid){
+							debugShader.setInt("skipped", 2);
+						}else if(chunk->empty){
+							debugShader.setInt("skipped", 1);
 						}else{
-							debugShader.setBool("skipped", false);
+							debugShader.setInt("skipped", 0);
 						}
 						debugShader.setMat4("model", model);
 						glDrawArrays(GL_LINES, 0, 24);
@@ -851,11 +856,6 @@ int main() {
 		                shaderProgramBlocks.setFloat("material.shininess", 32.f);
 		                glDrawArrays(GL_TRIANGLES, 0, mesh->vertices.size());
 		            }
-				   	/*glBindVertexArray(mesh->VAO);
-		            shaderProgramBlocks.setFloat("LODstep", float(mesh->distanceI));
-		            shaderProgramBlocks.setMat4("model", model);
-		            shaderProgramBlocks.setFloat("material.shininess", 32.f);
-		            glDrawArrays(GL_TRIANGLES, 0, mesh->vertices.size());*/
 		        }
 		    }
 		}
@@ -1092,18 +1092,18 @@ int main() {
 			glDrawArrays(GL_TRIANGLES, 72, 6);
 		}*/
 
-		if (pressed(BUTTON_8) && generate.load() == false) {
-			unsigned int count = 0;
-			totalChunks = 0;
-			generatePos = newPos;
-			if (extraThreads == 1) {
-			}
-
-			totalChunks = sliderTester1;
-
-			completedChunks = 0;
-			worker1Finished = false;
-			makeChunksOrder = true;
+		// Auto-trigger: re-generate whenever camera crosses into a new chunk cell
+		// and the worker has finished its last pass.
+		{
+		    constexpr float kTriggerDist = 32.0f; // 1 chunk width
+		    glm::vec3 delta = newPos - generatePos;
+		    float deltaSq = delta.x * delta.x + delta.y * delta.y + delta.z * delta.z;
+		    if (deltaSq >= kTriggerDist * kTriggerDist && worker1Finished.load()) {
+		        generatePos = newPos;
+		        renderRadius = static_cast<int>(sliderTester1);
+		        worker1Finished = false;
+		        makeChunksOrder = true;
+		    }
 		}
 
 		{
@@ -1119,7 +1119,6 @@ int main() {
 					std::lock_guard<std::mutex> meshLock(mesh->meshMtx);
 					if (mesh->VAO == 0) mesh->init();
 					mesh->updateBuffers();
-					mesh->readable = true;
 				}
 				mesh.reset();
 				lk.lock();
@@ -1129,9 +1128,9 @@ int main() {
 		}
 
 		if(pressed(BUTTON_J)){
-			std::cout << sizeof(chunksSearch) + (chunksSearch.bucket_count() * sizeof(void*)) + (chunksSearch.size() * (sizeof(decltype(chunksSearch)::value_type) + 16)) << std::endl;
-		}
 
+		}
+			
 		ImGui_ImplOpenGL3_NewFrame();
 		ImGui_ImplGlfw_NewFrame();
 		ImGui::NewFrame();
@@ -1376,7 +1375,7 @@ void chunker1() {
 				};
 
 				std::vector<Voxel> voxels;
-				int radius = totalChunks;
+				int radius = renderRadius;
     			int rSq = radius * radius;
 
 				voxels.reserve(static_cast<size_t>(4.2 * radius * radius * radius));
@@ -1400,6 +1399,35 @@ void chunker1() {
     			std::sort(voxels.begin(), voxels.end(), [](const Voxel& a, const Voxel& b) {
     			    return a.distSq < b.distSq;
     			});
+
+				// Build the set of chunk positions wanted for this radius + origin.
+				// Uses the same hasher as chunksSearch so the lookup is consistent.
+				using Vec3Hasher = decltype(chunksSearch)::hasher;
+				std::unordered_set<glm::vec3, Vec3Hasher> wantedSet;
+				wantedSet.reserve(voxels.size());
+				for (const auto& v : voxels) {
+				    wantedSet.insert(glm::vec3(
+				        generatePos.x + v.x * 32.0f,
+				        generatePos.y + (v.y - 1) * 32.0f,
+				        generatePos.z + v.z * 32.0f
+				    ));
+				}
+
+				// Hide every mesh whose chunk position is no longer inside the wanted radius.
+				// Setting readable=false costs nothing on the GL side — the main thread simply
+				// skips the draw call. The VAO/VBO stay alive so they can be re-enabled cheaply
+				// if the player reverses direction.
+				{
+				    size_t numMeshes = meshes.size();
+				    for (size_t i = 0; i < numMeshes; i++) {
+				        std::shared_ptr<Mesh> mesh = meshes.get(i);
+				        if (!mesh || mesh->deleted) continue;
+				        glm::vec3 pos(mesh->X, mesh->Y, mesh->Z);
+				        if (wantedSet.find(pos) == wantedSet.end()) {
+				            mesh->readable = false; 
+				        }
+				    }
+				}
 			
     			for (const auto& v : voxels) {
                     if (joinableThreads[0] == false) break;
@@ -1421,6 +1449,8 @@ void chunker1() {
                         if(!chunkPtr->usedMesh){
                             auto newMesh = std::make_shared<Mesh>();
                             newMesh->chunksIndex = chunkIndex;
+							newMesh->distanceI = chunkPtr->distanceI;
+							newMesh->pendingDistanceI = chunkPtr->distanceI;
                             meshes.push_back(newMesh);
                             unsigned int meshIndex = static_cast<unsigned int>(meshes.size() - 1);
                             newMesh->fillChunk(chunkX, chunkY, chunkZ);
@@ -1429,15 +1459,29 @@ void chunker1() {
                                 realMeshesQueue.push(meshIndex);
                             }
                             realMeshesQueueCV.notify_one();
-                            completedChunks++;
                             newMesh.reset();
                             chunkPtr->usedMesh = true;
                             chunkPtr->meshIndex = meshIndex;
-                        }else{
-                            chunkPtr->distanceI = chunkPtr->neighborDistanceI(chunkX, chunkY, chunkZ);
-                            std::shared_ptr<Mesh> mesh = meshes.get(chunkPtr->meshIndex);
-                            
-                        }
+                        } else {
+						    // Chunk already has a mesh. Update its LOD distance, and if it was
+						    // hidden (out-of-range last pass) but is now in-range, re-enable it.
+						    chunkPtr->distanceI = chunkPtr->neighborDistanceI(chunkX, chunkY, chunkZ);
+						    std::shared_ptr<Mesh> existingMesh = meshes.get(chunkPtr->meshIndex);
+						    if (existingMesh && !existingMesh->deleted && existingMesh->VAO != 0) {
+								if(existingMesh->distanceI != chunkPtr->distanceI){
+									existingMesh->pendingDistanceI = chunkPtr->distanceI;
+
+									existingMesh->fillChunk(chunkPtr->X, chunkPtr->Y, chunkPtr->Z);
+									{
+                            		    std::lock_guard<std::mutex> lock(realMeshesQueueMutex);
+                            		    realMeshesQueue.push(chunkPtr->meshIndex);
+                            		}
+                            		realMeshesQueueCV.notify_one();
+								}else{
+									existingMesh->readable = true;
+								}
+						    }
+						}
                     }
 
                     get_free_ram();

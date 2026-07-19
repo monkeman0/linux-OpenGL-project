@@ -3,14 +3,19 @@ out vec4 FragColor;
 
 
 uniform sampler2D aTexture;
-uniform bool skipped;
+uniform int skipped;
 
 void main()
 {
 
-    if(skipped){
-        FragColor = vec4(vec3(0.0f, 0.0f, 1.0f), 0.5f);
-    }else{
-        FragColor = vec4(vec3(1.0f, 0.0f, 0.0f), 0.9f);
+    switch(skipped){
+        case 0: FragColor = vec4(vec3(1.0f, 0.0f, 0.0f), 0.9f); 
+            break;
+        case 1: FragColor = vec4(vec3(0.0f, 0.8f, 1.0f), 0.9f); 
+            break;
+        case 2: FragColor = vec4(vec3(0.3f, 0.3f, 0.3f), 0.9f); 
+            break;
+        default:
+            break;
     }
 }
